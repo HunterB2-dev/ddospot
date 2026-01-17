@@ -13,3 +13,11 @@ and collect telemetry on amplification attacks.
 ```bash
 pip install -r requirements.txt
 python main.py
+```
+
+
+## ⚠️ Disclaimer
+
+This project is intended for **research, educational, and defensive purposes only**.  
+Do **not** use it to launch attacks against other networks or systems.  
+The author is **not responsible** for misuse of this software.
