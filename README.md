@@ -1,4 +1,4 @@
-# DDoSPot
+# DDoSPoT
 
 A Python-based DDoS honeypot designed to emulate vulnerable UDP services
 and collect telemetry on amplification attacks.
