@@ -4,7 +4,12 @@ SERVICES = {
     "ssdp": {"port": 1900, "protocol": "udp"},
 }
 
-THRESHOLD_PER_MIN = 2000
+# Extract TCP and UDP ports from SERVICES
+TCP_PORTS = [service["port"] for service in SERVICES.values() if service["protocol"] == "tcp"]
+UDP_PORTS = [service["port"] for service in SERVICES.values() if service["protocol"] == "udp"]
+
+# Detection thresholds
+THRESHOLD_PER_MIN = 100  # Events per minute to trigger blacklist (lowered for testing)
 BLACKLIST_SECONDS = 3600
 
 LOG_FILE = "honeypot.log"

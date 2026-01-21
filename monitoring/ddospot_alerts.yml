@@ -1,0 +1,161 @@
+# Prometheus Alerting Rules for DDoSPoT
+# Place this file alongside prometheus.yml and reference it in rule_files
+
+groups:
+  - name: ddospot_attacks
+    interval: 30s
+    rules:
+      # High attack rate alert
+      - alert: HighAttackRate
+        expr: rate(ddospot_attack_events_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: honeypot
+        annotations:
+          summary: "High attack rate detected"
+          description: "Attack event rate is {{ $value | humanize }} events/sec (threshold: 10/sec)"
+      
+      # Critical attack rate
+      - alert: CriticalAttackRate
+        expr: rate(ddospot_attack_events_total[5m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+          component: honeypot
+        annotations:
+          summary: "CRITICAL: Very high attack rate"
+          description: "Attack event rate is {{ $value | humanize }} events/sec - possible DDoS!"
+      
+      # Many unique attackers
+      - alert: ManyUniqueAttackers
+        expr: ddospot_unique_attackers > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: honeypot
+        annotations:
+          summary: "Many unique attacker IPs"
+          description: "{{ $value }} unique attacker IPs detected (threshold: 100)"
+      
+      # Distributed attack (botnet)
+      - alert: DistributedAttack
+        expr: ddospot_geolocation_countries_total > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: honeypot
+        annotations:
+          summary: "Distributed attack from multiple countries"
+          description: "Attacks from {{ $value }} countries detected - likely botnet activity"
+
+  - name: ddospot_service_health
+    interval: 60s
+    rules:
+      # Dashboard service down
+      - alert: DashboardDown
+        expr: ddospot_service_status{service="dashboard"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: dashboard
+        annotations:
+          summary: "Dashboard service is down"
+          description: "The DDoSPoT dashboard service is not running"
+      
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: ddospot_cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+      
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: ddospot_memory_usage_bytes > 2e9  # 2GB
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizeIBytes }} (threshold: 2GB)"
+      
+      # High disk usage
+      - alert: HighDiskUsage
+        expr: ddospot_disk_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value }}% (threshold: 85%)"
+
+  - name: ddospot_database
+    interval: 60s
+    rules:
+      # Large database size
+      - alert: LargeDatabaseSize
+        expr: ddospot_database_size_bytes > 1e9  # 1GB
+        for: 30m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database size is large"
+          description: "Database size is {{ $value | humanizeIBytes }} - consider cleanup"
+      
+      # Too many events
+      - alert: TooManyStoredEvents
+        expr: ddospot_database_events_total > 100000
+        for: 1h
+        labels:
+          severity: info
+          component: database
+        annotations:
+          summary: "High number of stored events"
+          description: "{{ $value }} events in database - consider archiving or cleanup"
+      
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(ddospot_database_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile query time is {{ $value }}s (threshold: 1s)"
+
+  - name: ddospot_logs
+    interval: 300s  # Check every 5 minutes
+    rules:
+      # Large log file
+      - alert: LargeLogFile
+        expr: ddospot_log_file_size_bytes > 50e6  # 50MB
+        for: 15m
+        labels:
+          severity: warning
+          component: logging
+        annotations:
+          summary: "Log file is large"
+          description: "{{ $labels.log_type }} log is {{ $value | humanizeIBytes }} - rotation may be needed"
+
+  - name: ddospot_ml
+    interval: 60s
+    rules:
+      # Slow ML predictions
+      - alert: SlowMLPredictions
+        expr: histogram_quantile(0.95, rate(ddospot_ml_prediction_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: ml
+        annotations:
+          summary: "ML predictions are slow"
+          description: "95th percentile prediction time is {{ $value }}s (threshold: 0.5s)"

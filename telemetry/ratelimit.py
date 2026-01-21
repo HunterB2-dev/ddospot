@@ -33,10 +33,16 @@ class RateLimiter:
         """
         now = time.time()
 
+        q = self.events[ip]
+        # Always allow the first event for a new IP
+        if len(q) == 0:
+            q.append(now)
+            return True
+        
+        # Blacklist check after first event allowance
         if self.is_blacklisted(ip):
             return False
-
-        q = self.events[ip]
+        
         q.append(now)
 
         while q and now - q[0] > self.window:

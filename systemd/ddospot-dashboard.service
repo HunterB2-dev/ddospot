@@ -1,0 +1,44 @@
+[Unit]
+Description=DDoSPoT Dashboard and API
+Documentation=file:///opt/ddospot/README.md
+After=network.target ddospot-honeypot.service
+
+[Service]
+Type=simple
+User=ddospot
+Group=ddospot
+WorkingDirectory=/opt/ddospot
+
+# Environment variables
+EnvironmentFile=/opt/ddospot/.env.prod
+
+# Security hardening
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/ddospot/honeypot.db /opt/ddospot/config.json /tmp /var/log/ddospot
+
+# Start service
+ExecStart=/opt/ddospot/myenv/bin/python3 /opt/ddospot/dashboard.py
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ddospot-dashboard
+
+# Resource limits
+MemoryLimit=768M
+CPUQuota=50%
+
+# Health check
+ExecHealthCheck=/usr/bin/curl -f http://localhost:5000/health || exit 1
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,41 @@
+# Prometheus Configuration for DDoSPoT Monitoring
+# Place this file as /etc/prometheus/prometheus.yml or in your Prometheus config directory
+
+global:
+  scrape_interval: 15s  # Scrape targets every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+  external_labels:
+    monitor: 'ddospot-honeypot'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'  # Alertmanager address
+
+# Load alerting rules
+rule_files:
+  - 'ddospot_alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # DDoSPoT Dashboard metrics
+  - job_name: 'ddospot-dashboard'
+    static_configs:
+      - targets: ['localhost:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s  # Scrape more frequently for real-time attacks
+    scrape_timeout: 5s
+    
+  # Node exporter for system metrics (optional, install separately)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 30s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

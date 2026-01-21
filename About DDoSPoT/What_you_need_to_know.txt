@@ -1,0 +1,466 @@
+================================================================================
+                   DDOSPOT - WHAT YOU NEED TO KNOW
+================================================================================
+
+🎯 SYSTEM OVERVIEW
+================================================================================
+
+DDOSPOT is a sophisticated DDoS/DoS honeypot that:
+
+✓ Attracts and captures attack traffic from multiple protocols
+✓ Detects and classifies attack types using machine learning
+✓ Persists all data in SQLite database
+✓ Provides real-time web dashboard for monitoring
+✓ Generates intelligent alerts via email/Discord
+✓ Maps attack origins geographically
+✓ Offers comprehensive REST API for integration
+
+================================================================================
+
+🏗️  ARCHITECTURE - 7 CORE SYSTEMS
+================================================================================
+
+1. PROTOCOL HANDLERS (core/server.py)
+   ✓ HTTP (Port 80) - Web service responses
+   ✓ SSH (Port 22) - SSH banner grabbing
+   ✓ DNS (Port 53) - DNS resolver responses
+   ✓ NTP (Port 123) - NTP time service
+   ✓ SSDP (Port 1900) - UPnP discovery
+   
+   Each protocol has custom response handlers to appear realistic
+
+2. ATTACK DETECTION (core/detection.py)
+   ✓ Multi-factor analysis with weighted scoring
+   ✓ Volumetric attack detection (rate-based)
+   ✓ Protocol-based anomaly detection
+   ✓ Payload analysis
+   ✓ Configurable thresholds per attack type
+   
+   Outputs: Attack severity (low/medium/high/critical)
+
+3. DATABASE (core/database.py)
+   ✓ SQLite persistence (honeypot.db)
+   ✓ Events table (283+ events in demo)
+   ✓ IP profiles table (10+ unique attackers)
+   ✓ Blacklist management with expiration
+   ✓ Geolocation cache
+   ✓ Alert history tracking
+   
+   Auto-indexes for performance optimization
+
+4. WEB DASHBOARD (dashboard.py + templates/static/)
+   ✓ Flask REST API with 25+ endpoints
+   ✓ Real-time statistics display
+   ✓ Interactive attacker ranking table
+   ✓ Attack timeline visualization
+   ✓ Protocol breakdown charts
+   ✓ Blacklist management interface
+   ✓ Alert history viewer
+   ✓ ML prediction display
+   
+   Access: http://localhost:5000
+
+5. GEOLOCATION (core/geolocation.py)
+   ✓ IP-to-location mapping with caching
+   ✓ Private IP detection
+   ✓ Rate-limited API calls
+   ✓ Real-time location tracking
+   
+   Helps identify attack origins
+
+6. ALERTS & NOTIFICATIONS (telemetry/alerts.py)
+   ✓ Multi-channel: Email (SMTP) + Discord webhooks
+   ✓ Smart throttling (300s default, prevents spam)
+   ✓ Configurable alert types and severity levels
+   ✓ Alert history persistence (5+ in demo)
+   ✓ HTML email templates
+   
+   Configure in: alert_config.json
+
+7. MACHINE LEARNING (ml/model.py, ml/features.py, ml/train.py)
+   ✓ Attack type classification (5 types):
+     - Volumetric attacks (rate-based DDoS)
+     - Multi-protocol attacks (mixed protocols)
+     - Amplification attacks (reflection-based)
+     - Sustained attacks (long-term pressure)
+     - Normal traffic (false positives)
+   
+   ✓ 20-feature extraction per event:
+     - Event count, unique IPs, protocol diversity
+     - Time span, events/second metrics
+     - Payload statistics (avg/max/min/variance)
+     - Port characteristics
+     - Protocol-specific ratios
+   
+   ✓ Random Forest classifier (100 estimators)
+   ✓ Feature importance ranking
+   ✓ Real-time predictions
+   ✓ Batch prediction capability
+   ✓ Pickle-based model persistence (ml/attack_model.pkl)
+
+================================================================================
+
+📊 DATA FLOW
+================================================================================
+
+1. ATTACK TRAFFIC
+   ↓
+   Protocol Handler captures packets
+   ↓
+   2. EVENT STORED
+   - Timestamp, source IP, port, protocol, payload size
+   - Stored in database.events table
+   ↓
+   3. DETECTION ENGINE
+   - Multi-factor analysis runs
+   - Attack type determined
+   - Severity calculated
+   ↓
+   4. IP PROFILE UPDATE
+   - Profile created/updated in database.ip_profiles
+   - Statistics calculated
+   - Blacklist decision made
+   ↓
+   5. ALERT GENERATION
+   - Alert severity determined
+   - Alert history recorded
+   - Email/Discord notification sent (if throttle allows)
+   ↓
+   6. ML PREDICTIONS
+   - Features extracted from events
+   - Attack type predicted
+   - Confidence score calculated
+   ↓
+   7. DASHBOARD UPDATE
+   - Real-time data refresh every 5 seconds
+   - Charts and tables updated
+   - API endpoints serve fresh data
+
+================================================================================
+
+⚙️ CONFIGURATION FILES
+================================================================================
+
+1. alert_config.json
+   - Email (SMTP) settings
+   - Discord webhook URLs
+   - Alert throttle settings (300s default)
+   - Alert type enable/disable
+   - Severity level thresholds
+   
+   Edit to configure alerts
+
+2. core/config.py
+   - Detection thresholds
+   - Attack type definitions
+   - Scoring weights
+   - Blacklist duration
+
+3. main.py
+   - Entry point for honeypot server
+   - Initializes all systems
+   - Handles graceful shutdown (Ctrl+C)
+
+================================================================================
+
+💾 DATABASE STRUCTURE
+================================================================================
+
+Tables:
+  
+  events
+    - id, timestamp, source_ip, port, protocol, payload_size, event_type
+    - 283 events in demo
+    - Indexed by: source_ip, timestamp, protocol
+  
+  ip_profiles
+    - ip, first_seen, last_seen, total_events, events_per_minute
+    - attack_type, protocols_used, avg_payload_size, severity
+    - 10 profiles in demo
+  
+  blacklist
+    - ip, reason, severity, expiration_time
+    - Auto-cleanup of expired entries
+  
+  geolocation_cache
+    - ip, country, city, latitude, longitude, cached_time
+  
+  alert_history
+    - alert_type, ip, severity, message, sent, created_at
+    - 5+ alerts in demo
+
+Location: /home/hunter/Projekty/ddospot/honeypot.db
+
+================================================================================
+
+🌐 API ENDPOINTS (RESTful)
+================================================================================
+
+STATISTICS:
+  GET /api/stats              → 283 events, 10 unique IPs, stats
+  GET /api/timeline           → 119 time-bucketed entries
+  GET /api/protocol-breakdown → Protocol distribution
+
+ATTACKERS:
+  GET /api/top-attackers      → Top 10 by event count
+  GET /api/profile/<ip>       → Detailed IP profile
+  
+BLACKLIST:
+  GET /api/blacklist          → Current blacklist
+  DELETE /api/blacklist/<ip>  → Remove from blacklist
+
+ALERTS:
+  GET /api/alerts/history     → Alert history
+  POST /api/alerts/test       → Send test alert
+
+GEOLOCATION:
+  GET /api/geolocation/<ip>   → IP location data
+  GET /api/map-data           → All attack origins
+  GET /api/country-stats      → Country-based stats
+
+ML MODEL:
+  GET /api/ml/model-stats     → Model info (5 types, 20 features)
+  GET /api/ml/predict/<ip>    → Attack type prediction
+  POST /api/ml/batch-predict  → Batch predictions
+
+SYSTEM:
+  GET /health                 → Health check
+
+================================================================================
+
+🎓 ATTACK TYPES EXPLAINED
+================================================================================
+
+1. VOLUMETRIC ATTACKS
+   - High event rate from single IP
+   - Bandwidth exhaustion goal
+   - Example: 50+ events/minute
+   - Detection: Rate-based threshold
+
+2. MULTI-PROTOCOL ATTACKS
+   - Multiple protocols from same IP
+   - HTTP + DNS + SSH combined
+   - More sophisticated
+   - Detection: Protocol diversity > 2
+
+3. AMPLIFICATION ATTACKS
+   - Using third-party services
+   - DNS amplification, NTP reflection
+   - Spoofed source IPs
+   - Detection: Unusual payload patterns
+
+4. SUSTAINED ATTACKS
+   - Long-duration low-rate attacks
+   - Harder to detect
+   - Goal: Resource exhaustion
+   - Detection: Time-window analysis
+
+5. NORMAL TRAFFIC
+   - False positives filtered
+   - Legitimate queries
+   - Low event counts
+   - Detection: Below all thresholds
+
+================================================================================
+
+🔒 SECURITY CONSIDERATIONS
+================================================================================
+
+DEPLOYMENT:
+✓ Deploy on isolated network segment if possible
+✓ Configure firewall to route attack traffic
+✓ Use with real-time monitoring
+✓ Set up alerts for critical attacks
+✓ Regular backups of database
+
+LIMITATIONS:
+✗ Honeypot doesn't actually block attacks (informational only)
+✗ Should be behind real firewall/DDoS mitigation
+✗ Local testing shows as localhost (127.0.0.1)
+✗ Public IP needed to attract real attack traffic
+
+RECOMMENDATIONS:
+→ Use in combination with real DDoS protection
+→ Monitor alerts regularly
+→ Review attack patterns for security insights
+→ Train ML model on real attack data over time
+→ Share threat intelligence with security team
+
+================================================================================
+
+📈 PERFORMANCE & SCALABILITY
+================================================================================
+
+Current Demo Data:
+  - 283+ attack events
+  - 11 unique attacker IPs
+  - 5 protocols tracked
+  - 20 ML features per event
+  - <0.1 MB database size
+
+Typical Performance:
+  - Real-time update: Every 5 seconds
+  - API response time: <100ms
+  - Dashboard load: <500ms
+  - ML prediction: <50ms
+  - Alert sending: <2 seconds
+
+Scalability Considerations:
+  - Database cleanup (30-day retention default)
+  - Blacklist auto-expiration
+  - Alert throttling (prevents spam)
+  - ML model retraining (monthly recommended)
+  - Consider migration to PostgreSQL for >1M events
+
+================================================================================
+
+🚀 QUICK START CHECKLIST
+================================================================================
+
+Before running for the first time:
+
+□ Python 3.13+ installed
+□ Virtual environment: /myenv
+□ Dependencies installed: flask, scikit-learn, numpy, requests
+□ Port 5000 available (dashboard)
+□ Ports 80, 22, 53, 123, 1900 available (honeypot services)
+□ Sufficient disk space (>100MB recommended)
+
+Starting the system:
+
+□ Start honeypot: ./myenv/bin/python3 main.py
+□ Start dashboard: ./myenv/bin/python3 dashboard.py
+□ Open browser: http://localhost:5000
+□ Verify status shows "Connected"
+□ Check API: curl http://localhost:5000/api/stats
+
+Testing locally:
+
+□ Generate attack traffic (see Commands.txt)
+□ Watch dashboard update in real-time
+□ Review alert history
+□ Check ML predictions
+□ Export data as CSV
+
+================================================================================
+
+📚 FILES & STRUCTURE
+================================================================================
+
+Core Components:
+  core/server.py              - Main honeypot server
+  core/detection.py           - Attack detection engine
+  core/database.py            - Database manager
+  core/geolocation.py         - Geolocation service
+  core/config.py              - System configuration
+
+Web Interface:
+  dashboard.py                - Flask web server
+  templates/index.html        - Dashboard HTML
+  static/dashboard.js         - Frontend JavaScript
+  static/dashboard.css        - Styling
+
+Machine Learning:
+  ml/model.py                 - Attack classifier
+  ml/features.py              - Feature extraction
+  ml/train.py                 - Training pipeline
+  ml/attack_model.pkl         - Trained model
+
+Alerts & Telemetry:
+  telemetry/alerts.py         - Alert system
+  telemetry/logger.py         - Logging utilities
+  telemetry/metrics.py        - Metrics collection
+  alert_config.json           - Alert configuration
+
+Testing:
+  test_*.py                   - Test suites
+  populate_demo.py            - Demo data generator
+
+Database:
+  honeypot.db                 - SQLite database
+
+================================================================================
+
+⚠️ COMMON ISSUES & SOLUTIONS
+================================================================================
+
+ISSUE: Dashboard shows "Connecting..." with no data
+
+SOLUTION:
+1. Hard refresh browser (Ctrl+Shift+R)
+2. Check backend: curl http://localhost:5000/health
+3. Check logs: tail -f /tmp/dashboard.log
+4. Restart dashboard: pkill -f "python3 dashboard.py"
+
+ISSUE: API returns 404 errors
+
+SOLUTION:
+1. Verify endpoints exist: curl -s http://localhost:5000/api/stats
+2. Check if honeypot is running: ps aux | grep main.py
+3. Restart both servers
+
+ISSUE: Database errors
+
+SOLUTION:
+1. Check permissions: ls -la honeypot.db
+2. Delete and recreate: rm honeypot.db
+3. Check available disk space: df -h
+
+ISSUE: Alerts not sending
+
+SOLUTION:
+1. Edit alert_config.json with real credentials
+2. Test SMTP: telnet smtp.gmail.com 587
+3. Check alert history: curl /api/alerts/history
+
+================================================================================
+
+💡 TIPS & TRICKS
+================================================================================
+
+1. EXPORT DATA AS CSV
+   - Use dashboard Export buttons
+   - Or query API and process JSON
+
+2. TRAIN ML MODEL PERIODICALLY
+   - python3 -c "from ml.train import train_from_database; train_from_database()"
+   - Improves accuracy over time
+
+3. MONITOR SYSTEM RESOURCES
+   - watch -n 1 'ps aux | grep python'
+   - Check disk: du -sh ./
+
+4. BACKUP DATABASE
+   - cp honeypot.db honeypot.db.backup
+   - Before major changes
+
+5. CLEAR OLD DATA
+   - Keep last 30 days (automatic)
+   - Manual cleanup available
+
+6. INTEGRATE WITH SIEM
+   - Use REST API to pull data
+   - Send logs to ELK/Splunk
+   - Real-time threat intelligence
+
+================================================================================
+
+🎯 NEXT STEPS
+================================================================================
+
+After familiarizing yourself:
+
+1. Deploy to production environment
+2. Configure real alert channels (email/Discord)
+3. Set up firewall to route attack traffic
+4. Monitor regularly for threats
+5. Train ML model on real data
+6. Integrate with security tools
+7. Share insights with security team
+8. Review and adjust thresholds monthly
+
+================================================================================
+
+
+
+

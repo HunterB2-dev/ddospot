@@ -1,5 +1,5 @@
 import os
-from config import MAX_LOG_SIZE_MB, MAX_LOG_FILES, DISK_USAGE_LIMIT_MB
+from core.config import MAX_LOG_SIZE_MB, MAX_LOG_FILES, DISK_USAGE_LIMIT_MB
 
 def get_dir_size_mb(path="."):
     total = 0

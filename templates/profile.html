@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attacker Profile</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🔍 Attacker Profile</h1>
+                <p class="subtitle">Details for IP: <span id="profile-ip">-</span></p>
+            </div>
+            <div class="header-status">
+                <a href="/" class="action-btn">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="section">
+                <h2>📄 Profile Summary</h2>
+                <div class="info-cards">
+                    <div class="info-card">
+                        <div class="info-label">First Seen</div>
+                        <div id="first-seen" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Last Seen</div>
+                        <div id="last-seen" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Total Events</div>
+                        <div id="total-events" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Rate/min</div>
+                        <div id="rate" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Attack Type</div>
+                        <div id="attack-type" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Avg Payload</div>
+                        <div id="avg-payload" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Severity</div>
+                        <div id="severity" class="info-value">-</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="charts-section">
+                <div class="chart-container">
+                    <h2>Protocol Distribution</h2>
+                    <canvas id="profile-protocol-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>📡 Recent Events</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Port</th>
+                                <th>Protocol</th>
+                                <th>Size</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profile-events-tbody">
+                            <tr><td colspan="5" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Attacker Profile | DDoSPot</p>
+        </footer>
+    </div>
+
+    <script src="/static/profile.js"></script>
+</body>
+</html>

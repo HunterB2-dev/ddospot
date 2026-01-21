@@ -1,0 +1,41 @@
+[Unit]
+Description=DDoSPoT Honeypot Service
+Documentation=file:///opt/ddospot/README.md
+After=network.target
+
+[Service]
+Type=simple
+User=ddospot
+Group=ddospot
+WorkingDirectory=/opt/ddospot
+
+# Environment variables from .env file
+EnvironmentFile=/opt/ddospot/.env.prod
+
+# Security hardening
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/ddospot/honeypot.db /opt/ddospot/config.json /tmp /var/log/ddospot
+
+# Start service
+ExecStart=/opt/ddospot/myenv/bin/python3 /opt/ddospot/main.py
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ddospot
+
+# Resource limits
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
+

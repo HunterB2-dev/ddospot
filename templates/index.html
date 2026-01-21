@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDoSPot Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🍯 DDoSPot Dashboard</h1>
+                <p class="subtitle">Real-time DDoS/DoS Attack Honeypot Monitor</p>
+            </div>
+            <div class="header-status">
+                <span id="status-indicator" class="status-indicator">●</span>
+                <span id="status-text">Connecting...</span>
+                <div class="refresh-control">
+                    <label for="refresh-interval">Refresh:</label>
+                    <select id="refresh-interval">
+                        <option value="5000">5s</option>
+                        <option value="10000">10s</option>
+                        <option value="30000">30s</option>
+                        <option value="60000">60s</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Statistics Grid -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Total Events (24h)</div>
+                        <div id="stat-total-events" class="stat-value">-</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Unique Attackers</div>
+                        <div id="stat-unique-ips" class="stat-value">-</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🚫</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Blacklisted IPs</div>
+                        <div id="stat-blacklist" class="stat-value">-</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Top Protocol</div>
+                        <div id="stat-top-protocol" class="stat-value">-</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Alerts Section -->
+            <section class="section">
+                <h2>🔔 Recent Alerts</h2>
+                <div class="alerts-controls">
+                    <button id="test-alert-btn" class="action-btn">📤 Send Test Alert</button>
+                    <button id="clear-alerts-btn" class="action-btn secondary">🗑️ Clear History</button>
+                </div>
+                <div id="alerts-container" class="alerts-list">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="chart-container">
+                    <h2>Attack Timeline</h2>
+                    <canvas id="timeline-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2>Protocol Breakdown</h2>
+                    <canvas id="protocol-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Top Attackers Section -->
+            <section class="section">
+                <h2>🔴 Top Attacking IPs</h2>
+                <div class="filter-bar">
+                    <input type="text" id="filter-attackers-ip" placeholder="Filter by IP" class="filter-input">
+                    <select id="filter-attackers-severity" class="filter-input">
+                        <option value="">All Severities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                    <button id="export-attackers" class="export-btn">📥 Export CSV</button>
+                </div>
+                <div id="top-attackers" class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Events</th>
+                                <th>Type</th>
+                                <th>Rate/min</th>
+                                <th>Protocols</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attackers-tbody">
+                            <tr><td colspan="6" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Blacklist Section -->
+            <section class="section">
+                <h2>🚫 Active Blacklist</h2>
+                <div class="filter-bar">
+                    <input type="text" id="filter-blacklist-ip" placeholder="Filter by IP" class="filter-input">
+                    <select id="filter-blacklist-reason" class="filter-input">
+                        <option value="">All Reasons</option>
+                        <option value="volumetric">Volumetric</option>
+                        <option value="multi-protocol">Multi-Protocol</option>
+                        <option value="sustained">Sustained</option>
+                        <option value="escalating">Escalating</option>
+                    </select>
+                    <button id="export-blacklist" class="export-btn">📥 Export CSV</button>
+                </div>
+                <div id="blacklist-container" class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Reason</th>
+                                <th>Severity</th>
+                                <th>Expires In</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blacklist-tbody">
+                            <tr><td colspan="4" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Recent Events Section -->
+            <section class="section">
+                <h2>📡 Recent Attack Events</h2>
+                <div class="filter-bar">
+                    <input type="text" id="filter-events-ip" placeholder="Filter by IP" class="filter-input">
+                    <select id="filter-events-protocol" class="filter-input">
+                        <option value="">All Protocols</option>
+                        <option value="HTTP">HTTP</option>
+                        <option value="SSH">SSH</option>
+                        <option value="DNS">DNS</option>
+                        <option value="SSDP">SSDP</option>
+                    </select>
+                    <select id="filter-events-type" class="filter-input">
+                        <option value="">All Types</option>
+                        <option value="GET">GET Request</option>
+                        <option value="POST">POST Request</option>
+                        <option value="UDP Flood">UDP Flood</option>
+                    </select>
+                    <select id="events-page-size" class="filter-input">
+                        <option value="20">20</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <button id="export-events" class="export-btn">📥 Export CSV</button>
+                </div>
+                <div id="recent-events" class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>IP</th>
+                                <th>Port</th>
+                                <th>Protocol</th>
+                                <th>Size</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-tbody">
+                            <tr><td colspan="6" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination">
+                        <button id="events-prev" class="action-btn secondary">← Prev</button>
+                        <span id="events-page-info">Page 1</span>
+                        <button id="events-next" class="action-btn">Next →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Database Info Section -->
+            <section class="section">
+                <h2>💾 Database Information</h2>
+                <div id="db-info" class="info-cards">
+                    <div class="info-card">
+                        <div class="info-label">Database Size</div>
+                        <div id="db-size" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Total Events</div>
+                        <div id="db-events" class="info-value">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">IP Profiles</div>
+                        <div id="db-profiles" class="info-value">-</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Geolocation Map Section -->
+            <section class="section">
+                <h2>🌍 Attack Origins Map</h2>
+                <p class="section-description">Global distribution of attacking IPs and attack volume by location</p>
+                <div id="map" class="geo-map"></div>
+                <div class="geo-stats">
+                    <h3>Attack Distribution by Country</h3>
+                    <div id="country-stats" class="country-stats-container">
+                        <div class="loading">Loading country statistics...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>DDoSPot - Advanced Honeypot Monitoring System | Updated: <span id="last-update">-</span></p>
+        </footer>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
