@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 class AlertConfig:
     """Alert configuration manager"""
     
-    def __init__(self, config_file: str = 'alert_config.json'):
+    def __init__(self, config_file: str = 'config/alert_config.json'):
         self.config_file = config_file
         self.config = self._load_config()
     
@@ -336,7 +336,7 @@ class AlertThrottler:
 class AlertManager:
     """Main alert manager coordinating all alert channels"""
     
-    def __init__(self, db_path: str = 'honeypot.db', config_file: str = 'alert_config.json'):
+    def __init__(self, db_path: str = 'logs/honeypot.db', config_file: str = 'config/alert_config.json'):
         self.config = AlertConfig(config_file)
         self.throttler = AlertThrottler(db_path)
         self.email = EmailAlert(self.config)
@@ -469,7 +469,7 @@ class AlertManager:
 # Global instance
 _alert_manager = None
 
-def get_alert_manager(db_path: str = 'honeypot.db', config_file: str = 'alert_config.json') -> AlertManager:
+def get_alert_manager(db_path: str = 'logs/honeypot.db', config_file: str = 'config/alert_config.json') -> AlertManager:
     """Get or create alert manager instance"""
     global _alert_manager
     if _alert_manager is None:

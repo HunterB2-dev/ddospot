@@ -42,11 +42,11 @@ def initialize_state():
     global _state, _detector, _db, _alert_manager, _ml_model, _feature_extractor
     _state = HoneypotState(window_size_seconds=60, rate_threshold=THRESHOLD_PER_MIN)
     _detector = AttackDetector(rate_threshold=THRESHOLD_PER_MIN, window_seconds=60)
-    _db = HoneypotDatabase("honeypot.db")
-    _alert_manager = get_alert_manager("honeypot.db", "alert_config.json")
+    _db = HoneypotDatabase("logs/honeypot.db")
+    _alert_manager = get_alert_manager("logs/honeypot.db", "config/alert_config.json")
     _ml_model = get_model()
     _feature_extractor = FeatureExtractor()
-    logger.info("Database initialized: honeypot.db")
+    logger.info("Database initialized: logs/honeypot.db")
     logger.info("Alert manager initialized")
     logger.info("ML model loaded for attack classification")
 

@@ -212,7 +212,7 @@ def print_status():
     print(f"  Dashboard API:    {dashboard_status}")
     
     try:
-        db = HoneypotDatabase("honeypot.db")
+        db = HoneypotDatabase("logs/honeypot.db")
         stats = db.get_statistics()
         print(f"  Database:         {Colors.GREEN}✓ INITIALIZED{Colors.RESET}")
         print(f"  Total Events:     {Colors.YELLOW}{stats.get('total_events', 0)}{Colors.RESET}")
@@ -224,8 +224,8 @@ def print_status():
     # Log file status
     print(f"\n  {Colors.BOLD}Log Files:{Colors.RESET}")
     logs = [
-        ("Honeypot", Path("/tmp/honeypot.log")),
-        ("Dashboard", Path("/tmp/dashboard.log"))
+        ("Honeypot", Path("logs/honeypot.log")),
+        ("Dashboard", Path("logs/dashboard.log"))
     ]
     
     for name, log_path in logs:
@@ -319,7 +319,7 @@ def simulate_quick_attack():
     """Simulate a quick attack with 100 events"""
     print(f"\n{Colors.BOLD}{Colors.CYAN}🎯 SIMULATING QUICK ATTACK{Colors.RESET}\n")
     
-    db = HoneypotDatabase("honeypot.db")
+    db = HoneypotDatabase("logs/honeypot.db")
     
     attackers = ["10.0.1." + str(random.randint(1, 254)) for _ in range(3)]
     protocols = ["HTTP", "DNS", "SSH", "NTP", "SSDP"]
@@ -349,7 +349,7 @@ def simulate_botnet_attack():
     """Simulate a distributed botnet attack"""
     print(f"\n{Colors.BOLD}{Colors.CYAN}🌍 SIMULATING BOTNET ATTACK{Colors.RESET}\n")
     
-    db = HoneypotDatabase("honeypot.db")
+    db = HoneypotDatabase("logs/honeypot.db")
     geo = GeolocationService()
     
     test_locations = [
@@ -413,7 +413,7 @@ def simulate_custom_attack():
 
         attackers = [f"10.0.{random.randint(1, 254)}.{random.randint(1, 254)}" for _ in range(attacker_count)]
 
-        db = HoneypotDatabase("honeypot.db")
+        db = HoneypotDatabase("logs/honeypot.db")
         print(f"Generating {total_events} events from {attacker_count} attackers across {len(protocols)} protocol(s)...")
 
         for i in range(total_events):
@@ -451,7 +451,7 @@ def cleanup_old_events_cli():
             print(f"{Colors.RED}✗ Invalid value. Days must be positive.{Colors.RESET}\n")
             return
 
-        db = HoneypotDatabase("honeypot.db")
+        db = HoneypotDatabase("logs/honeypot.db")
         removed = db.cleanup_old_events(days_int)
         db.vacuum()
         size_info = db.get_database_size()
@@ -470,7 +470,7 @@ def cleanup_old_events_cli():
 def rotate_logs_now():
     """Force rotate honeypot and dashboard logs immediately."""
 
-    logs = [Path("/tmp/honeypot.log"), Path("/tmp/dashboard.log")]
+    logs = [Path("logs/honeypot.log"), Path("logs/dashboard.log")]
     max_bytes, backups = _log_rotation_settings()
 
     for log in logs:
@@ -484,8 +484,8 @@ def health_check():
     print(f"\n{Colors.BOLD}{Colors.CYAN}🏥 HEALTH CHECK{Colors.RESET}\n")
     
     services = [
-        ("Honeypot Server", "main.py", None, Path("/tmp/honeypot.log")),
-        ("Dashboard", "dashboard.py", 5000, Path("/tmp/dashboard.log"))
+        ("Honeypot Server", "main.py", None, Path("logs/honeypot.log")),
+        ("Dashboard", "dashboard.py", 5000, Path("logs/dashboard.log"))
     ]
     
     for name, script, port, log_path in services:
@@ -567,7 +567,7 @@ def view_database_stats():
     print(f"\n{Colors.BOLD}{Colors.CYAN}📊 DATABASE STATISTICS{Colors.RESET}\n")
     
     try:
-        db = HoneypotDatabase("honeypot.db")
+        db = HoneypotDatabase("logs/honeypot.db")
         stats = db.get_statistics()
         
         print(f"  Total Events:        {Colors.YELLOW}{stats['total_events']}{Colors.RESET}")
@@ -621,7 +621,7 @@ def view_top_attackers():
     print(f"\n{Colors.BOLD}{Colors.CYAN}🔴 TOP ATTACKING IPs{Colors.RESET}\n")
     
     try:
-        db = HoneypotDatabase("honeypot.db")
+        db = HoneypotDatabase("logs/honeypot.db")
         attackers = db.get_top_attackers(15)
         
         if not attackers:
@@ -698,8 +698,8 @@ geolocates attackers, and displays an interactive world map of attack origins.
   • GET  /api/blacklist          - Active blacklist
 
 {Colors.BOLD}LOGS:{Colors.RESET}
-  • Honeypot:  /tmp/honeypot.log
-  • Dashboard: /tmp/dashboard.log
+  • Honeypot:  logs/honeypot.log
+  • Dashboard: logs/dashboard.log
 
 {Colors.BOLD}DEFAULT PORTS:{Colors.RESET}
   • HTTP:     80
@@ -780,7 +780,7 @@ def main():
                 print("HONEYPOT LOGS (last 50 lines)")
                 print("=" * 60 + "\n")
                 try:
-                    subprocess.run(["tail", "-50", "/tmp/honeypot.log"])
+                    subprocess.run(["tail", "-50", "logs/honeypot.log"])
                 except:
                     print(f"{Colors.YELLOW}ℹ️  Log file not available{Colors.RESET}")
                 print()
@@ -789,7 +789,7 @@ def main():
                 print("DASHBOARD LOGS (last 50 lines)")
                 print("=" * 60 + "\n")
                 try:
-                    subprocess.run(["tail", "-50", "/tmp/dashboard.log"])
+                    subprocess.run(["tail", "-50", "logs/dashboard.log"])
                 except:
                     print(f"{Colors.YELLOW}ℹ️  Log file not available{Colors.RESET}")
                 print()
