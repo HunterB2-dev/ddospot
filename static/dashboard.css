@@ -679,6 +679,152 @@ body {
     color: #c62828;
 }
 
+/* Dark Mode Toggle Button */
+.theme-toggle {
+    background: none;
+    border: 2px solid white;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2em;
+    margin-right: 15px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(20deg);
+}
+
+/* Dark Mode Theme */
+body.dark-mode {
+    background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+    color: #e0e0e0;
+}
+
+body.dark-mode .container {
+    background: transparent;
+}
+
+body.dark-mode .header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+body.dark-mode .section,
+body.dark-mode .section.readme-section,
+body.dark-mode .section.export-section {
+    background: #1f1f1f;
+    border: 1px solid #333;
+}
+
+body.dark-mode .stat-card,
+body.dark-mode .info-card,
+body.dark-mode .readme-card,
+body.dark-mode .export-card {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-left-color: #ff3333;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .stat-label,
+body.dark-mode .info-label,
+body.dark-mode .readme-card h3,
+body.dark-mode .export-card h3 {
+    color: #ff6b6b;
+}
+
+body.dark-mode .stat-icon {
+    filter: brightness(1.2);
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background: #333;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark-mode input::placeholder {
+    color: #999;
+}
+
+body.dark-mode .data-table,
+body.dark-mode .table-container {
+    background: #2a2a2a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .data-table thead {
+    background: #1f1f1f;
+}
+
+body.dark-mode .data-table tbody tr {
+    border-color: #333;
+}
+
+body.dark-mode .data-table tbody tr:hover {
+    background: #333;
+}
+
+body.dark-mode .action-btn {
+    background: #ff3333;
+    color: white;
+}
+
+body.dark-mode .action-btn:hover {
+    background: #ff5555;
+}
+
+body.dark-mode .action-btn.secondary {
+    background: #444;
+    color: #e0e0e0;
+}
+
+body.dark-mode .action-btn.secondary:hover {
+    background: #555;
+}
+
+body.dark-mode .footer {
+    background: #1f1f1f;
+    border-top: 1px solid #333;
+    color: #999;
+}
+
+body.dark-mode .chart-container {
+    background: #2a2a2a;
+}
+
+body.dark-mode .geo-map {
+    filter: invert(0.93) hue-rotate(200deg);
+}
+
+body.dark-mode .filter-bar {
+    background: #2a2a2a;
+}
+
+body.dark-mode .pagination {
+    background: #2a2a2a;
+}
+
+body.dark-mode .alerts-list,
+body.dark-mode .country-stats-container {
+    background: #2a2a2a;
+}
+
+body.dark-mode .theme-toggle {
+    border-color: #e0e0e0;
+}
+
+body.dark-mode .theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 /* README Section */
 .readme-section {
     background: linear-gradient(135deg, rgba(255, 51, 51, 0.05) 0%, rgba(255, 107, 107, 0.05) 100%);

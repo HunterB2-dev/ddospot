@@ -695,6 +695,26 @@ function initExports() {
     document.getElementById('export-report-json')?.addEventListener('click', () => exportData('report', 'json'));
 }
 
+// Dark mode toggle
+function initDarkMode() {
+    const toggle = document.getElementById('dark-mode-toggle');
+    if (!toggle) return;
+    
+    // Load saved preference
+    const isDarkMode = localStorage.getItem('ddospot-dark-mode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+        toggle.textContent = '☀️';
+    }
+    
+    toggle.addEventListener('click', function() {
+        document.body.classList.toggle('dark-mode');
+        const isNowDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('ddospot-dark-mode', isNowDark ? 'true' : 'false');
+        toggle.textContent = isNowDark ? '☀️' : '🌙';
+    });
+}
+
 // Export data function
 async function exportData(type, format) {
     const statusEl = document.getElementById('export-status');
@@ -741,6 +761,11 @@ async function exportData(type, format) {
 
 // Call export init in main DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
+    try {
+        initDarkMode();
+        console.log('Dark mode initialized');
+    } catch (e) { console.error('Dark mode init failed:', e); }
+    
     try {
         initExports();
         console.log('Exports initialized');
