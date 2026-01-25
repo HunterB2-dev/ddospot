@@ -630,6 +630,176 @@ def internal_error(error):
 
 
 # ========================
+# EXPORT ENDPOINTS
+# ========================
+
+@app.route('/api/export/events/csv', methods=['GET'])
+def export_events_csv():
+    """Export recent events as CSV"""
+    if not db:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+        import csv
+        from io import StringIO
+        
+        hours = request.args.get('hours', default=24, type=int)
+        events = db.get_recent_events(hours, 10000)
+        
+        # Create CSV
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=['timestamp', 'ip', 'port', 'protocol', 'size', 'type', 'country'])
+        writer.writeheader()
+        
+        for event in events:
+            writer.writerow({
+                'timestamp': datetime.fromtimestamp(event['timestamp']).isoformat(),
+                'ip': event['source_ip'],
+                'port': event['destination_port'],
+                'protocol': event['protocol'],
+                'size': event['payload_size'],
+                'type': event['event_type'],
+                'country': event.get('country', 'Unknown')
+            })
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=ddospot_events.csv'}
+        )
+    except Exception as e:
+        logger.error(f"CSV export error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/export/events/json', methods=['GET'])
+def export_events_json():
+    """Export recent events as JSON"""
+    if not db:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+        hours = request.args.get('hours', default=24, type=int)
+        events = db.get_recent_events(hours, 10000)
+        
+        result = []
+        for event in events:
+            result.append({
+                'timestamp': datetime.fromtimestamp(event['timestamp']).isoformat(),
+                'ip': event['source_ip'],
+                'port': event['destination_port'],
+                'protocol': event['protocol'],
+                'size': event['payload_size'],
+                'type': event['event_type'],
+                'country': event.get('country', 'Unknown')
+            })
+        
+        return Response(
+            json.dumps(result, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=ddospot_events.json'}
+        )
+    except Exception as e:
+        logger.error(f"JSON export error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/export/stats/json', methods=['GET'])
+def export_stats_json():
+    """Export statistics as JSON"""
+    if not db:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+        hours = request.args.get('hours', default=24, type=int)
+        stats = db.get_statistics(hours)
+        
+        return Response(
+            json.dumps(stats, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=ddospot_stats.json'}
+        )
+    except Exception as e:
+        logger.error(f"Stats export error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/export/profiles/json', methods=['GET'])
+def export_profiles_json():
+    """Export IP profiles as JSON"""
+    if not db:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+        profiles = db.get_profiles(limit=10000)
+        
+        result = []
+        for profile in profiles:
+            result.append({
+                'ip': profile['ip'],
+                'total_events': profile['total_events'],
+                'severity': profile['severity'],
+                'last_seen': datetime.fromtimestamp(profile['last_seen']).isoformat() if profile['last_seen'] else None,
+                'first_seen': datetime.fromtimestamp(profile['first_seen']).isoformat() if profile['first_seen'] else None,
+                'protocols': profile.get('protocols', {})
+            })
+        
+        return Response(
+            json.dumps(result, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=ddospot_profiles.json'}
+        )
+    except Exception as e:
+        logger.error(f"Profiles export error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/export/report/json', methods=['GET'])
+def export_report_json():
+    """Export comprehensive report as JSON"""
+    if not db:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+        hours = request.args.get('hours', default=24, type=int)
+        
+        report = {
+            'generated_at': datetime.now().isoformat(),
+            'period_hours': hours,
+            'statistics': db.get_statistics(hours),
+            'top_attackers': [p['ip'] for p in db.get_profiles(limit=10)],
+            'blacklist_count': len(db.get_blacklist()),
+            'protocols': {},
+            'severity_breakdown': {}
+        }
+        
+        # Add protocol breakdown
+        events = db.get_recent_events(hours, 10000)
+        protocols = {}
+        for event in events:
+            proto = event['protocol']
+            protocols[proto] = protocols.get(proto, 0) + 1
+        report['protocols'] = protocols
+        
+        # Add severity breakdown
+        for severity in ['low', 'medium', 'high', 'critical']:
+            profiles = db.get_profiles_by_severity(severity)
+            report['severity_breakdown'][severity] = {
+                'count': len(profiles),
+                'events': sum(p['total_events'] for p in profiles)
+            }
+        
+        return Response(
+            json.dumps(report, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=ddospot_report.json'}
+        )
+    except Exception as e:
+        logger.error(f"Report export error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ========================
 # ML MODEL ENDPOINTS
 # ========================
 

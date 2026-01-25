@@ -233,6 +233,44 @@
                 </div>
             </section>
 
+            <!-- Export Section -->
+            <section class="section export-section">
+                <h2>💾 Export Data</h2>
+                <p class="section-description">Download attack data and statistics in various formats</p>
+                <div class="export-grid">
+                    <div class="export-card">
+                        <h3>📊 Events</h3>
+                        <p>Recent attack events</p>
+                        <div class="export-buttons">
+                            <button id="export-events-csv" class="export-btn primary">CSV</button>
+                            <button id="export-events-json" class="export-btn">JSON</button>
+                        </div>
+                    </div>
+                    <div class="export-card">
+                        <h3>📈 Statistics</h3>
+                        <p>Attack statistics summary</p>
+                        <div class="export-buttons">
+                            <button id="export-stats-json" class="export-btn primary">JSON</button>
+                        </div>
+                    </div>
+                    <div class="export-card">
+                        <h3>🎯 IP Profiles</h3>
+                        <p>Attacker profiles and history</p>
+                        <div class="export-buttons">
+                            <button id="export-profiles-json" class="export-btn primary">JSON</button>
+                        </div>
+                    </div>
+                    <div class="export-card">
+                        <h3>📋 Full Report</h3>
+                        <p>Comprehensive attack report</p>
+                        <div class="export-buttons">
+                            <button id="export-report-json" class="export-btn primary">JSON</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="export-status" class="export-status" style="display:none;"></div>
+            </section>
+
             <!-- README Section -->
             <section class="section readme-section">
                 <h2>📖 About DDoSPoT</h2>

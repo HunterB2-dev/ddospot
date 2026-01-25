@@ -681,3 +681,69 @@ function formatTimeRemaining(seconds) {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
     return `${Math.floor(seconds / 3600)}h`;
 }
+
+// ========================
+// EXPORT FUNCTIONS
+// ========================
+
+// Initialize export buttons
+function initExports() {
+    document.getElementById('export-events-csv')?.addEventListener('click', () => exportData('events', 'csv'));
+    document.getElementById('export-events-json')?.addEventListener('click', () => exportData('events', 'json'));
+    document.getElementById('export-stats-json')?.addEventListener('click', () => exportData('stats', 'json'));
+    document.getElementById('export-profiles-json')?.addEventListener('click', () => exportData('profiles', 'json'));
+    document.getElementById('export-report-json')?.addEventListener('click', () => exportData('report', 'json'));
+}
+
+// Export data function
+async function exportData(type, format) {
+    const statusEl = document.getElementById('export-status');
+    try {
+        statusEl.textContent = '📥 Exporting...';
+        statusEl.className = 'export-status';
+        statusEl.style.display = 'block';
+        
+        const url = `/api/export/${type}/${format}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        // Get filename from response header or use default
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `ddospot_${type}.${format}`;
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename=([^;]+)/);
+            if (match) filename = match[1].replace(/"/g, '');
+        }
+        
+        const blob = await response.blob();
+        const url_link = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url_link;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url_link);
+        a.remove();
+        
+        statusEl.textContent = `✅ Downloaded: ${filename}`;
+        statusEl.className = 'export-status success';
+        
+        setTimeout(() => {
+            statusEl.style.display = 'none';
+        }, 3000);
+    } catch (error) {
+        console.error(`Export failed:`, error);
+        statusEl.textContent = `❌ Export failed: ${error.message}`;
+        statusEl.className = 'export-status error';
+    }
+}
+
+// Call export init in main DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        initExports();
+        console.log('Exports initialized');
+    } catch (e) { console.error('Export init failed:', e); }
+});
+
