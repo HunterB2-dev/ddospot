@@ -1,7 +1,0 @@
-asyncio
-aiosqlite
-dnslib  # pre realistické DNS odpovede
-scapy   # pre packet parsing (optional, lightweight)
-python-dotenvflask
-flask-cors
-prometheus-client
