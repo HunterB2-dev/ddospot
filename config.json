@@ -1,6 +1,0 @@
-{
-  "log_rotation": {
-    "max_bytes": 5242880,
-    "backups": 2
-  }
-}
