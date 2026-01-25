@@ -56,6 +56,11 @@ class AlertConfig:
                 'enabled': False,
                 'webhook_url': ''
             },
+            'telegram': {
+                'enabled': False,
+                'bot_token': '',
+                'chat_id': ''
+            },
             'alerts': {
                 'critical_attack': True,
                 'ip_blacklisted': True,
@@ -210,6 +215,64 @@ class DiscordAlert:
             return False
 
 
+class TelegramAlert:
+    """Telegram bot alert sender"""
+    
+    def __init__(self, config: AlertConfig):
+        self.config = config
+    
+    def send(self, title: str, message: str, fields: Optional[List[Dict]] = None) -> bool:
+        """Send Telegram alert via bot"""
+        if not self.config.get('telegram.enabled'):
+            return False
+        
+        try:
+            bot_token = str(self.config.get('telegram.bot_token', ''))
+            chat_id = str(self.config.get('telegram.chat_id', ''))
+            
+            if not bot_token or not chat_id:
+                logger.warning('Telegram bot token or chat ID not configured')
+                return False
+            
+            # Build message
+            text = f"🚨 *{title}*\n\n{message}"
+            
+            if fields:
+                for field in fields:
+                    name = field.get('name', 'Field')
+                    value = field.get('value', 'N/A')
+                    text += f"\n\n📊 *{name}:* `{value}`"
+            
+            text += f"\n\n⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            
+            # Send via Telegram API
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                'chat_id': chat_id,
+                'text': text,
+                'parse_mode': 'Markdown'
+            }
+            
+            req = Request(
+                url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            
+            response = urlopen(req, timeout=10)
+            response.read()
+            response.close()
+            
+            logger.info(f'Telegram alert sent: {title}')
+            return True
+        except URLError as e:
+            logger.error(f'Failed to send Telegram alert: {e}')
+            return False
+        except Exception as e:
+            logger.error(f'Telegram alert error: {e}')
+            return False
+
+
 class AlertThrottler:
     """Smart alert throttling to prevent spam"""
     
@@ -341,6 +404,7 @@ class AlertManager:
         self.throttler = AlertThrottler(db_path)
         self.email = EmailAlert(self.config)
         self.discord = DiscordAlert(self.config)
+        self.telegram = TelegramAlert(self.config)
     
     def send_alert(self, alert_type: str, severity: str, title: str, message: str, 
                    ip: Optional[str] = None, fields: Optional[List[Dict]] = None) -> bool:
@@ -374,6 +438,11 @@ class AlertManager:
         if self.config.get('discord.enabled'):
             color = self._get_color_for_severity(severity)
             if self.discord.send(title, message, color, fields):
+                sent = True
+        
+        # Telegram alert
+        if self.config.get('telegram.enabled'):
+            if self.telegram.send(title, message, fields):
                 sent = True
         
         # Log to database
