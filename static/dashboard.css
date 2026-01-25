@@ -584,3 +584,103 @@ body {
     background: #3498db;
     color: white;
 }
+
+/* README Section */
+.readme-section {
+    background: linear-gradient(135deg, rgba(255, 51, 51, 0.05) 0%, rgba(255, 107, 107, 0.05) 100%);
+    border: 2px solid rgba(255, 51, 51, 0.2);
+    border-radius: 12px;
+}
+
+.readme-content {
+    margin-top: 20px;
+}
+
+.readme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.readme-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-left: 4px solid var(--primary);
+}
+
+.readme-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(255, 51, 51, 0.15);
+}
+
+.readme-icon {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.readme-card h3 {
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.readme-card p {
+    color: #666;
+    line-height: 1.6;
+    font-size: 0.95em;
+}
+
+.readme-features {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.readme-features h3 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.features-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.features-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(255, 51, 51, 0.05) 0%, rgba(255, 107, 107, 0.05) 100%);
+    border-radius: 8px;
+    color: #555;
+}
+
+.features-list span {
+    font-size: 1.3em;
+    min-width: 25px;
+}
+
+.readme-info {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(233, 30, 99, 0.1) 100%);
+    padding: 20px;
+    border-left: 4px solid #f44336;
+    border-radius: 8px;
+    color: #d32f2f;
+}
+
+.readme-info p {
+    margin: 0;
+    line-height: 1.6;
+}
