@@ -193,6 +193,15 @@ def init_db():
     except Exception as e:
         logger.warning(f"Could not initialize threat intelligence API: {e}")
     
+    # Initialize response system API
+    try:
+        from app.response_api import response_api, init_response_api
+        init_response_api(db)
+        app.register_blueprint(response_api)
+        logger.info("Response system API initialized and registered")
+    except Exception as e:
+        logger.warning(f"Could not initialize response system API: {e}")
+    
     # Update initial metrics
     metrics.update_service_status("dashboard", True)
     metrics.update_system_metrics()
@@ -655,6 +664,12 @@ def favicon():
 def index():
     """Main dashboard page"""
     return render_template('index.html')
+
+
+@app.route('/simple')
+def simple_dashboard():
+    """Simple dashboard with basic features"""
+    return render_template('simple.html')
 
 
 @app.route('/advanced')
