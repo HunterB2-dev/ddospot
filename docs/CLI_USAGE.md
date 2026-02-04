@@ -10,7 +10,7 @@ A comprehensive command-line interface for managing and monitoring the DDoSPoT h
 
 ```bash
 cd /home/hunter/Projekty/ddospot
-./myenv/bin/python3 cli.py
+./myenv/bin/python3 app/cli.py
 ```
 
 ### Create an Alias (Recommended)
@@ -18,7 +18,7 @@ cd /home/hunter/Projekty/ddospot
 Add to your `~/.bashrc`:
 
 ```bash
-alias ddospot='cd /home/hunter/Projekty/ddospot && ./myenv/bin/python3 cli.py'
+alias ddospot='cd /home/hunter/Projekty/ddospot && ./myenv/bin/python3 app/cli.py'
 ```
 
 Then reload:
@@ -46,13 +46,14 @@ ddospot
 | 5 | Stop Dashboard | Stops the Flask dashboard |
 | 6 | Stop All Services | Stops all running services |
 
-### 🎯 ATTACK SIMULATION (7-9)
+### 🎯 ATTACK SIMULATION (7-9, 24)
 
 | Option | Command | Description |
 |--------|---------|-------------|
 | 7 | Quick Attack | Generates 100 attack events from 3 IPs |
 | 8 | Botnet Attack | **RECOMMENDED** - 160 events from 5 countries with geolocation |
 | 9 | Custom Attack | Framework for custom simulation (coming soon) |
+| 24 | IP Blacklisting | Simulates automated response system and IP blocking |
 
 ### 📊 MONITORING & STATUS (10-13)
 
@@ -105,7 +106,7 @@ ddospot
    Choose: 14 (Open Dashboard)
    ```
 
-### With Attack Simulation
+### With Attack Simulation & Blacklisting
 
 1. **Start the system:**
    ```
@@ -117,19 +118,24 @@ ddospot
    Choose: 8 (Simulate Botnet Attack)
    ```
 
-3. **Monitor in real-time:**
+3. **Simulate IP blacklisting:**
+   ```
+   Choose: 24 (Simulate IP Blacklisting)
+   ```
+
+4. **Monitor in real-time:**
    ```
    Choose: 14 (Open Dashboard)
    ```
 
-4. **View statistics:**
-   ```
-   Choose: 11 (View Database Statistics)
-   ```
-
-5. **Check attackers:**
+5. **View blacklisted IPs:**
    ```
    Choose: 13 (View Top Attackers)
+   ```
+
+6. **Check system status:**
+   ```
+   Choose: 10 (View System Status)
    ```
 
 ## 🗺️ Interactive Features
