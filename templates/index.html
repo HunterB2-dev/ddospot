@@ -4,25 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DDoSPot Dashboard</title>
-    <link rel="stylesheet" href="/static/dashboard.css">
+    <link rel="stylesheet" href="/static/dashboard-clean.css?v=20260131f">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // Initialize theme immediately to prevent flash
+        const savedTheme = localStorage.getItem('ddospot-theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+        }
+        console.log('🍯 DDoSPoT Dashboard Loading...');
+    </script>
 </head>
 <body>
     <div class="container">
         <header class="header">
             <div class="header-content">
-                <h1>🍯 DDoSPot Dashboard</h1>
+                <h1>🍯 DDoSPoT Dashboard</h1>
                 <p class="subtitle">Real-time DDoS/DoS Attack Honeypot Monitor</p>
             </div>
             <div class="header-status">
                 <span id="status-indicator" class="status-indicator">●</span>
                 <span id="status-text">Connecting...</span>
+                <div class="live-indicator">
+                    <span class="live-pulse"></span>
+                    <span class="live-text">LIVE</span>
+                    <span class="last-updated">Updated: <span id="update-time">just now</span></span>
+                </div>
                 <button id="dark-mode-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+                <button id="layout-settings-btn" class="theme-toggle" title="Dashboard layout settings">⚙️</button>
+                <button id="alert-settings-btn" class="theme-toggle" title="Configure alert thresholds">🔔</button>
+                <button id="pause-refresh-btn" class="theme-toggle" title="Pause/Resume refresh">▶️</button>
                 <div class="refresh-control">
                     <label for="refresh-interval">Refresh:</label>
                     <select id="refresh-interval">
+                        <option value="real-time" selected>⚡ Real-time (1s)</option>
                         <option value="5000">5s</option>
                         <option value="10000">10s</option>
                         <option value="30000">30s</option>
@@ -66,7 +83,7 @@
             </section>
 
             <!-- Alerts Section -->
-            <section class="section">
+            <section class="section" data-section="alerts">
                 <h2>🔔 Recent Alerts</h2>
                 <div class="alerts-controls">
                     <button id="test-alert-btn" class="action-btn">📤 Send Test Alert</button>
@@ -77,8 +94,200 @@
                 </div>
             </section>
 
+            <!-- Threat Intelligence Section -->
+            <section class="section" id="threat-intel-section">
+                <!-- Threat Intelligence Widget will be loaded here -->
+            </section>
+
+            <!-- Advanced Search & Filtering -->
+            <section class="section search-section" data-section="search">
+                <h2>🔍 Advanced Search & Filtering</h2>
+                <div class="search-controls">
+                    <div class="search-row">
+                        <input type="text" id="search-ip" placeholder="Search by IP address" class="search-input">
+                        <input type="text" id="search-date-from" placeholder="From (YYYY-MM-DD)" class="search-input">
+                        <input type="text" id="search-date-to" placeholder="To (YYYY-MM-DD)" class="search-input">
+                    </div>
+                    <div class="search-row">
+                        <select id="search-protocol" class="search-input">
+                            <option value="">All Protocols</option>
+                            <option value="SSH">SSH</option>
+                            <option value="HTTP">HTTP</option>
+                            <option value="SSDP">SSDP</option>
+                            <option value="DNS">DNS</option>
+                        </select>
+                        <select id="search-country" class="search-input">
+                            <option value="">All Countries</option>
+                        </select>
+                        <select id="search-hours" class="search-input">
+                            <option value="1">Last 1 hour</option>
+                            <option value="6">Last 6 hours</option>
+                            <option value="24" selected>Last 24 hours</option>
+                            <option value="72">Last 3 days</option>
+                            <option value="168">Last 7 days</option>
+                            <option value="720">Last 30 days</option>
+                        </select>
+                    </div>
+                    <div class="search-row">
+                        <button id="search-btn" class="action-btn">🔎 Search</button>
+                        <button id="search-reset-btn" class="action-btn secondary">↻ Reset</button>
+                        <button id="search-export-btn" class="export-btn">📥 Export Results</button>
+                    </div>
+                </div>
+                <div id="search-results" class="table-container">
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        Click "Search" to find attacks by IP, date, country, or protocol
+                    </div>
+                </div>
+            </section>
+
+            <!-- Alert Rules Section -->
+            <section class="section alert-rules-section">
+                <h2>🚨 Custom Alert Rules</h2>
+                
+                <div class="alert-rules-controls">
+                    <button id="new-rule-btn" class="action-btn">➕ New Alert Rule</button>
+                    <button id="refresh-rules-btn" class="action-btn secondary">↻ Refresh</button>
+                </div>
+
+                <!-- Rule Creation Form (Hidden by default) -->
+                <div id="rule-form-container" class="rule-form-container" style="display: none;">
+                    <div class="rule-form">
+                        <h3>Create New Alert Rule</h3>
+                        
+                        <div class="form-group">
+                            <label>Rule Name:</label>
+                            <input type="text" id="rule-name" placeholder="e.g., High Volume Attack" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Description:</label>
+                            <textarea id="rule-description" placeholder="Optional description" class="form-input"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Condition Type:</label>
+                                <select id="rule-condition-type" class="form-input">
+                                    <option value="event_count">Event Count</option>
+                                    <option value="ip_address">IP Address</option>
+                                    <option value="protocol">Protocol</option>
+                                    <option value="payload_size">Payload Size</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Field:</label>
+                                <select id="rule-condition-field" class="form-input">
+                                    <option value="source_ip">Source IP</option>
+                                    <option value="protocol">Protocol</option>
+                                    <option value="port">Port</option>
+                                    <option value="payload_size">Payload Size</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Operator:</label>
+                                <select id="rule-condition-operator" class="form-input">
+                                    <option value="==">=</option>
+                                    <option value="!=">≠</option>
+                                    <option value="contains">Contains</option>
+                                    <option value="not_contains">Not Contains</option>
+                                    <option value=">">></option>
+                                    <option value="<"><</option>
+                                    <option value=">=">≥</option>
+                                    <option value="<=">≤</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Value:</label>
+                                <input type="text" id="rule-condition-value" placeholder="e.g., 192.168.1.1 or 100" class="form-input">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Action:</label>
+                                <select id="rule-action" class="form-input">
+                                    <option value="log">Log Only</option>
+                                    <option value="notify">Notify</option>
+                                    <option value="block">Block IP</option>
+                                    <option value="webhook">Send Webhook</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Action Target (optional):</label>
+                                <input type="text" id="rule-action-target" placeholder="e.g., email@example.com or webhook URL" class="form-input">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Threshold:</label>
+                                <input type="number" id="rule-threshold" value="1" min="1" max="1000" class="form-input">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Time Window (minutes):</label>
+                                <input type="number" id="rule-time-window" value="1" min="1" max="1440" class="form-input">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button id="save-rule-btn" class="action-btn">✅ Save Rule</button>
+                            <button id="cancel-rule-btn" class="action-btn secondary">✕ Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rules List -->
+                <div id="rules-list" class="rules-list">
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        Loading alert rules...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Attack Pattern Reports Section -->
+            <section class="section reports-section" data-section="reports">
+                <h2>📊 Attack Pattern Reports</h2>
+                
+                <div class="report-controls">
+                    <select id="report-type" class="report-input">
+                        <option value="patterns">Attack Patterns</option>
+                        <option value="statistics">Detailed Statistics</option>
+                        <option value="daily">Daily Summary</option>
+                        <option value="timeline">Attack Timeline</option>
+                    </select>
+                    
+                    <select id="report-time-period" class="report-input">
+                        <option value="6">Last 6 hours</option>
+                        <option value="24">Last 24 hours</option>
+                        <option value="72">Last 3 days</option>
+                        <option value="168">Last 7 days</option>
+                        <option value="360">Last 15 days</option>
+                        <option value="720" selected>Last 30 days</option>
+                    </select>
+                    
+                    <button id="generate-report-btn" class="action-btn">📈 Generate Report</button>
+                    <button id="export-report-json" class="action-btn secondary">⬇ Export JSON</button>
+                    <button id="export-report-csv" class="action-btn secondary">⬇ Export CSV</button>
+                </div>
+
+                <!-- Report Display -->
+                <div id="report-container" class="report-container">
+                    <div style="padding: 40px 20px; text-align: center; color: #999;">
+                        <p>📋 Select a report type and click "Generate Report"</p>
+                    </div>
+                </div>
+            </section>
+
             <!-- Charts Section -->
-            <section class="charts-section">
+            <section class="section" data-section="charts">
                 <div class="chart-container">
                     <h2>Attack Timeline</h2>
                     <canvas id="timeline-chart"></canvas>
@@ -87,10 +296,15 @@
                     <h2>Protocol Breakdown</h2>
                     <canvas id="protocol-chart"></canvas>
                 </div>
+                <div class="chart-container full-width">
+                    <h2>🔥 Attack Intensity Heatmap (30d)</h2>
+                    <p style="font-size: 12px; color: #999; margin-bottom: 10px;">Darker = More intense attacks</p>
+                    <canvas id="heatmap-chart"></canvas>
+                </div>
             </section>
 
             <!-- Top Attackers Section -->
-            <section class="section">
+            <section class="section" data-section="attackers">
                 <h2>🔴 Top Attacking IPs</h2>
                 <div class="filter-bar">
                     <input type="text" id="filter-attackers-ip" placeholder="Filter by IP" class="filter-input">
@@ -123,7 +337,7 @@
             </section>
 
             <!-- Blacklist Section -->
-            <section class="section">
+            <section class="section" data-section="blacklist">
                 <h2>🚫 Active Blacklist</h2>
                 <div class="filter-bar">
                     <input type="text" id="filter-blacklist-ip" placeholder="Filter by IP" class="filter-input">
@@ -154,7 +368,7 @@
             </section>
 
             <!-- Recent Events Section -->
-            <section class="section">
+            <section class="section" data-section="events">
                 <h2>📡 Recent Attack Events</h2>
                 <div class="filter-bar">
                     <input type="text" id="filter-events-ip" placeholder="Filter by IP" class="filter-input">
@@ -202,8 +416,132 @@
                 </div>
             </section>
 
+            <!-- Real-Time Log Viewer -->
+            <section class="section live-logs-section" data-section="logs">
+                <h2>📺 Real-Time Log Viewer</h2>
+                <div class="live-controls">
+                    <button id="live-pause-btn" class="action-btn" data-state="playing">⏸️ Pause</button>
+                    <button id="live-clear-btn" class="action-btn secondary">🗑️ Clear Logs</button>
+                    <label for="live-filter-protocol">Protocol:</label>
+                    <select id="live-filter-protocol" class="live-filter-input">
+                        <option value="">All</option>
+                    </select>
+                    <label for="live-filter-port">Port:</label>
+                    <select id="live-filter-port" class="live-filter-input">
+                        <option value="">All</option>
+                    </select>
+                    <label for="live-filter-ip">IP:</label>
+                    <input type="text" id="live-filter-ip" placeholder="Filter by IP" class="live-filter-input">
+                    <span class="live-status">
+                        <span class="live-pulse-small"></span>
+                        <span id="live-event-count">0 events</span>
+                    </span>
+                </div>
+                <div id="live-logs-container" class="live-logs-container">
+                    <div class="live-logs-table">
+                        <div class="live-logs-header">
+                            <div class="log-column log-time">Time</div>
+                            <div class="log-column log-ip">Source IP</div>
+                            <div class="log-column log-port">Port</div>
+                            <div class="log-column log-protocol">Protocol</div>
+                            <div class="log-column log-size">Payload</div>
+                            <div class="log-column log-type">Type</div>
+                        </div>
+                        <div id="live-logs-body" class="live-logs-body">
+                            <div class="live-log-entry placeholder">Waiting for events...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="live-stats">
+                    <div class="live-stat">
+                        <span class="live-stat-label">Events/min:</span>
+                        <span id="live-events-per-min" class="live-stat-value">0</span>
+                    </div>
+                    <div class="live-stat">
+                        <span class="live-stat-label">Unique IPs:</span>
+                        <span id="live-unique-ips" class="live-stat-value">0</span>
+                    </div>
+                    <div class="live-stat">
+                        <span class="live-stat-label">Protocols:</span>
+                        <span id="live-protocol-count" class="live-stat-value">0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ML Anomaly Detection Section -->
+            <section class="section anomaly-section" data-section="anomaly">
+                <h2>🤖 ML Anomaly Detection</h2>
+                <div class="anomaly-controls">
+                    <button id="anomaly-scan-btn" class="action-btn">🔍 Scan for Anomalies</button>
+                    <label for="anomaly-hours">Period:</label>
+                    <select id="anomaly-hours" class="filter-input">
+                        <option value="6">Last 6 hours</option>
+                        <option value="24">Last 24 hours</option>
+                        <option value="72">Last 3 days</option>
+                        <option value="168">Last 7 days</option>
+                        <option value="720" selected>Last 30 days</option>
+                    </select>
+                    <label for="anomaly-sensitivity">Sensitivity:</label>
+                    <select id="anomaly-sensitivity" class="filter-input">
+                        <option value="1">Low (1.0x)</option>
+                        <option value="2" selected>Medium (2.0x)</option>
+                        <option value="3">High (3.0x)</option>
+                        <option value="4">Very High (4.0x)</option>
+                    </select>
+                </div>
+
+                <!-- Anomaly Summary -->
+                <div class="anomaly-summary">
+                    <div class="summary-stat anomaly-stat">
+                        <div class="stat-value" id="anomaly-count">-</div>
+                        <div class="stat-label">Anomalies Detected</div>
+                    </div>
+                    <div class="summary-stat anomaly-stat">
+                        <div class="stat-value" id="anomaly-severity">-</div>
+                        <div class="stat-label">Overall Severity</div>
+                    </div>
+                    <div class="summary-stat anomaly-stat">
+                        <div class="stat-value" id="anomaly-type-count">-</div>
+                        <div class="stat-label">Anomaly Types</div>
+                    </div>
+                    <div class="summary-stat anomaly-stat">
+                        <div class="stat-value" id="anomaly-suspicious-ips">-</div>
+                        <div class="stat-label">Suspicious IPs</div>
+                    </div>
+                </div>
+
+                <!-- Anomalies Table -->
+                <div class="anomaly-details">
+                    <h3>Detected Anomalies</h3>
+                    <div class="table-container">
+                        <table class="data-table anomaly-table">
+                            <thead>
+                                <tr>
+                                    <th>Score</th>
+                                    <th>Type</th>
+                                    <th>Source IP</th>
+                                    <th>Details</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="anomaly-tbody">
+                                <tr><td colspan="5" class="loading">Click "Scan for Anomalies" to detect...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Anomaly Type Distribution -->
+                <div class="anomaly-breakdown">
+                    <h3>Anomaly Type Distribution</h3>
+                    <div id="anomaly-type-breakdown" class="type-breakdown">
+                        <div class="loading">Waiting for scan...</div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Database Info Section -->
-            <section class="section">
+            <section class="section" data-section="database">
                 <h2>💾 Database Information</h2>
                 <div id="db-info" class="info-cards">
                     <div class="info-card">
@@ -222,20 +560,154 @@
             </section>
 
             <!-- Geolocation Map Section -->
-            <section class="section">
-                <h2>🌍 Attack Origins Map</h2>
+            <section class="section geo-section" data-section="map">
+                <h2>🌍 Geographic Heat Map</h2>
                 <p class="section-description">Global distribution of attacking IPs and attack volume by location</p>
+                
+                <div class="geo-controls">
+                    <button id="geo-load-btn" class="action-btn">🌍 Load Locations</button>
+                    <button id="geo-clear-btn" class="action-btn secondary">🗑️ Clear Map</button>
+                    <label for="geo-time-period">Period:</label>
+                    <select id="geo-time-period" class="filter-input">
+                        <option value="6">Last 6 hours</option>
+                        <option value="24" selected>Last 24 hours</option>
+                        <option value="72">Last 3 days</option>
+                        <option value="168">Last 7 days</option>
+                    </select>
+                </div>
+                
                 <div id="map" class="geo-map"></div>
+                
                 <div class="geo-stats">
-                    <h3>Attack Distribution by Country</h3>
+                    <h3>🔴 Attack Distribution by Country</h3>
                     <div id="country-stats" class="country-stats-container">
-                        <div class="loading">Loading country statistics...</div>
+                        <div class="loading">Click "Load Locations" to populate map...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Threat Intelligence Section -->
+            <section class="section threat-section" data-section="threat">
+                <h2>⚠️ Threat Intelligence</h2>
+                <div class="threat-controls">
+                    <button id="threat-scan-btn" class="action-btn">🔍 Scan Threats</button>
+                    <button id="threat-high-risk-btn" class="action-btn secondary">🚨 High Risk IPs</button>
+                    <label for="threat-threshold">Risk Threshold:</label>
+                    <select id="threat-threshold" class="filter-input">
+                        <option value="4">Medium (4+)</option>
+                        <option value="7" selected>High (7+)</option>
+                        <option value="9">Critical (9+)</option>
+                    </select>
+                </div>
+
+                <!-- Threat Summary -->
+                <div class="threat-summary">
+                    <div class="threat-stat critical-stat">
+                        <div class="stat-value" id="threat-critical">-</div>
+                        <div class="stat-label">Critical</div>
+                    </div>
+                    <div class="threat-stat high-stat">
+                        <div class="stat-value" id="threat-high">-</div>
+                        <div class="stat-label">High</div>
+                    </div>
+                    <div class="threat-stat medium-stat">
+                        <div class="stat-value" id="threat-medium">-</div>
+                        <div class="stat-label">Medium</div>
+                    </div>
+                    <div class="threat-stat low-stat">
+                        <div class="stat-value" id="threat-low">-</div>
+                        <div class="stat-label">Low</div>
+                    </div>
+                </div>
+
+                <!-- High-Risk IPs Table -->
+                <div class="threat-details">
+                    <h3>🚨 High-Risk Threatening IPs</h3>
+                    <div class="table-container">
+                        <table class="data-table threat-table">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Risk Score</th>
+                                    <th>Threat Type</th>
+                                    <th>Description</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="threat-tbody">
+                                <tr><td colspan="5" class="loading">Click "Scan Threats" to analyze...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Threat Type Distribution -->
+                <div class="threat-breakdown">
+                    <h3>Threat Type Distribution</h3>
+                    <div id="threat-type-breakdown" class="type-breakdown">
+                        <div class="loading">Waiting for threat scan...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Automated Response Actions Section -->
+            <section class="section response-section" data-section="response">
+                <h2>🛡️ Automated Response Actions</h2>
+                <div class="response-controls">
+                    <button id="response-block-btn" class="action-btn danger">🚫 Block IP</button>
+                    <button id="response-webhook-btn" class="action-btn secondary">🔗 Add Webhook</button>
+                    <button id="response-refresh-btn" class="action-btn">🔄 Refresh</button>
+                </div>
+
+                <!-- Response Statistics -->
+                <div class="response-summary">
+                    <div class="response-stat blocked-count">
+                        <div class="stat-value" id="response-blocked">0</div>
+                        <div class="stat-label">Blocked IPs</div>
+                    </div>
+                    <div class="response-stat webhook-count">
+                        <div class="stat-value" id="response-webhooks">0</div>
+                        <div class="stat-label">Active Webhooks</div>
+                    </div>
+                    <div class="response-stat action-count">
+                        <div class="stat-value" id="response-actions">0</div>
+                        <div class="stat-label">Actions Taken</div>
+                    </div>
+                </div>
+
+                <!-- Blocked IPs Table -->
+                <div class="response-details">
+                    <h3>🚫 Currently Blocked IPs</h3>
+                    <div class="table-container">
+                        <table class="data-table response-table">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Reason</th>
+                                    <th>Threat Type</th>
+                                    <th>Risk Score</th>
+                                    <th>Blocked At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="response-tbody">
+                                <tr><td colspan="6" class="loading">Click "Refresh" to load blocked IPs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action History -->
+                <div class="action-history">
+                    <h3>📋 Recent Actions</h3>
+                    <div id="action-history-list" class="action-history-list">
+                        <div class="loading">Loading action history...</div>
                     </div>
                 </div>
             </section>
 
             <!-- Export Section -->
-            <section class="section export-section">
+            <section class="section export-section" data-section="export">
                 <h2>💾 Export Data</h2>
                 <p class="section-description">Download attack data and statistics in various formats</p>
                 <div class="export-grid">
@@ -273,7 +745,7 @@
             </section>
 
             <!-- README Section -->
-            <section class="section readme-section">
+            <section class="section readme-section" data-section="readme">
                 <h2>📖 About DDoSPoT</h2>
                 <div class="readme-content">
                     <div class="readme-grid">
@@ -323,6 +795,291 @@
         </footer>
     </div>
 
-    <script src="/static/dashboard.js"></script>
+    <!-- Layout Settings Modal -->
+    <div id="layout-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Dashboard Layout Settings</h2>
+                <button class="modal-close" id="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <h3>Show/Hide Sections</h3>
+                <div class="section-toggles">
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-alerts" class="section-toggle" checked> 🔔 Recent Alerts
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-reports" class="section-toggle" checked> 📊 Attack Pattern Reports
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-charts" class="section-toggle" checked> 📈 Attack Timeline & Protocol
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-heatmap" class="section-toggle" checked> 🔥 Attack Intensity Heatmap
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-attackers" class="section-toggle" checked> 🔴 Top Attacking IPs
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-blacklist" class="section-toggle" checked> 🚫 Active Blacklist
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-events" class="section-toggle" checked> 📡 Recent Attack Events
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-logs" class="section-toggle" checked> 📺 Real-Time Log Viewer
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-anomaly" class="section-toggle" checked> 🤖 ML Anomaly Detection
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-database" class="section-toggle" checked> 💾 Database Information
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-map" class="section-toggle" checked> 🌍 Geographic Heat Map
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-threat" class="section-toggle" checked> ⚠️ Threat Intelligence
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-response" class="section-toggle" checked> 🛡️ Automated Response Actions
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-export" class="section-toggle" checked> 💾 Export Data
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="section-readme" class="section-toggle" checked> 📖 About DDoSPoT
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="reset-layout-btn" class="action-btn secondary">↺ Reset to Default</button>
+                <button id="close-layout-btn" class="action-btn primary">✓ Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Settings Modal -->
+    <div id="alert-settings-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content alert-settings-modal">
+            <div class="modal-header">
+                <h2>Configure Alert Thresholds</h2>
+                <button class="modal-close" id="alert-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Notification Channels -->
+                <div class="settings-section">
+                    <h3>📢 Notification Channels</h3>
+                    <div class="channel-toggles">
+                        <label class="toggle-item">
+                            <input type="checkbox" id="alert-channel-email" class="alert-channel" checked> Email
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="alert-channel-discord" class="alert-channel"> Discord
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="alert-channel-telegram" class="alert-channel"> Telegram
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Event Rate Threshold -->
+                <div class="settings-section">
+                    <h3>⚡ Event Rate Threshold</h3>
+                    <label class="threshold-control">
+                        <span>Events per minute to trigger alert:</span>
+                        <div class="input-group">
+                            <input type="range" id="alert-events-threshold" class="threshold-slider" min="10" max="500" value="50" step="10">
+                            <input type="number" id="alert-events-input" class="threshold-input" min="10" max="500" value="50" step="10">
+                            <span class="unit">events/min</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Unique IP Threshold -->
+                <div class="settings-section">
+                    <h3>🎯 Unique IP Threshold</h3>
+                    <label class="threshold-control">
+                        <span>Unique attacking IPs to trigger alert:</span>
+                        <div class="input-group">
+                            <input type="range" id="alert-unique-ips-threshold" class="threshold-slider" min="5" max="200" value="20" step="5">
+                            <input type="number" id="alert-unique-ips-input" class="threshold-input" min="5" max="200" value="20" step="5">
+                            <span class="unit">IPs</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Attack Duration Threshold -->
+                <div class="settings-section">
+                    <h3>⏱️ Attack Duration Threshold</h3>
+                    <label class="threshold-control">
+                        <span>Minutes of sustained attack to trigger alert:</span>
+                        <div class="input-group">
+                            <input type="range" id="alert-duration-threshold" class="threshold-slider" min="1" max="60" value="5" step="1">
+                            <input type="number" id="alert-duration-input" class="threshold-input" min="1" max="60" value="5" step="1">
+                            <span class="unit">minutes</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Severity Alert Levels -->
+                <div class="settings-section">
+                    <h3>🎨 Alert Severity Levels</h3>
+                    <div class="severity-toggles">
+                        <label class="toggle-item">
+                            <input type="checkbox" class="alert-severity" value="critical" checked> 🔴 Critical
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" class="alert-severity" value="high" checked> 🟠 High
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" class="alert-severity" value="medium" checked> 🟡 Medium
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" class="alert-severity" value="low"> 🟢 Low
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="reset-alerts-btn" class="action-btn secondary">↺ Reset to Default</button>
+                <button id="save-alerts-btn" class="action-btn primary">💾 Save Settings</button>
+            </div>
+            <div id="alert-settings-message" class="settings-message" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- IP Action Modal -->
+    <div id="ip-action-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Actions for <span id="action-ip-display">-</span></h2>
+                <button class="modal-close" id="action-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="action-buttons-grid">
+                    <button id="action-view-profile" class="action-modal-btn primary">
+                        <div class="action-icon">👁️</div>
+                        <div class="action-label">View Profile</div>
+                        <div class="action-desc">Detailed attacker information</div>
+                    </button>
+                    <button id="action-blacklist-btn" class="action-modal-btn danger">
+                        <div class="action-icon">🚫</div>
+                        <div class="action-label">Add to Blacklist</div>
+                        <div class="action-desc">Block this IP permanently</div>
+                    </button>
+                    <button id="action-whitelist-btn" class="action-modal-btn success">
+                        <div class="action-icon">✅</div>
+                        <div class="action-label">Add to Whitelist</div>
+                        <div class="action-desc">Trust this IP</div>
+                    </button>
+                    <button id="action-block-country-btn" class="action-modal-btn warning">
+                        <div class="action-icon">🌍</div>
+                        <div class="action-label">Block Country</div>
+                        <div class="action-desc">Block all IPs from this country</div>
+                    </button>
+                </div>
+                <div id="action-message" class="action-message" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IP Profile Modal -->
+    <div id="ip-profile-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content profile-modal">
+            <div class="modal-header">
+                <h2>IP Profile: <span id="profile-ip-display">-</span></h2>
+                <button class="modal-close" id="profile-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-grid">
+                    <div class="profile-item">
+                        <label>Total Events:</label>
+                        <span id="profile-events">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Attack Type:</label>
+                        <span id="profile-type">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Rate/Min:</label>
+                        <span id="profile-rate">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Severity:</label>
+                        <span id="profile-severity">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Protocols:</label>
+                        <span id="profile-protocols">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Country:</label>
+                        <span id="profile-country">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>ISP:</label>
+                        <span id="profile-isp">-</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Risk Score:</label>
+                        <span id="profile-risk">-</span>
+                    </div>
+                </div>
+                <div class="profile-section">
+                    <h3>Recent Events</h3>
+                    <div id="profile-recent-events" class="profile-events-list">
+                        <div class="loading">Loading events...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="profile-close-btn" class="action-btn primary">✓ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Intelligence Widget -->
+    <link rel="stylesheet" href="/static/threat-intelligence-widget.css?v=20260203t">
+    
+    <!-- Threat Intelligence Widget HTML (inserted before main content) -->
+    <script id="threat-intel-template" type="text/html">
+        <!-- This will be loaded dynamically by the widget JavaScript -->
+    </script>
+
+    <script>
+        // Connection health check and initialization helper
+        (function() {
+            console.log('[Health Check] Starting connection verification...');
+            
+            // Check if APIs are accessible
+            const checkConnection = async () => {
+                try {
+                    const response = await fetch('/api/stats', { timeout: 5000 });
+                    if (response.ok) {
+                        const el = document.getElementById('status-indicator');
+                        const txt = document.getElementById('status-text');
+                        if (el) el.classList.add('healthy');
+                        if (txt) txt.textContent = 'Connected';
+                        console.log('[Health Check] ✓ API is responding correctly');
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('[Health Check] ✗ Connection failed:', e.message);
+                    const txt = document.getElementById('status-text');
+                    if (txt) txt.textContent = 'Connection Error';
+                }
+                return false;
+            };
+            
+            // Run check after small delay
+            setTimeout(() => {
+                checkConnection().catch(err => console.error('Health check error:', err));
+            }, 500);
+        })();
+    </script>
+    
+    <script src="/static/dashboard.js?v=20260131f"></script>
+    <script src="/static/threat-intelligence-widget.js?v=20260203t"></script>
 </body>
 </html>

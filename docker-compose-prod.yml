@@ -1,0 +1,246 @@
+version: '3.8'
+
+services:
+  # DDoSPot Honeypot Service
+  honeypot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddospot-honeypot
+    hostname: ddospot-honeypot
+    
+    # Run honeypot
+    command: python start-honeypot.py
+    
+    # Network configuration
+    networks:
+      - ddospot-network
+    
+    # Port mappings for honeypot services
+    ports:
+      - "22:2222"     # SSH honeypot (external:internal)
+      - "80:8080"     # HTTP honeypot
+      - "1900:1900/udp"  # SSDP honeypot
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+      - HONEYPOT_HOST=0.0.0.0
+      - PROMETHEUS_PORT=9090
+    
+    # Volume mounts
+    volumes:
+      - ./honeypot.db:/app/honeypot.db
+      - ./logs:/app/logs
+      - ./config:/app/config
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  # DDoSPot Dashboard Service
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddospot-dashboard
+    hostname: ddospot-dashboard
+    
+    # Run dashboard
+    command: python start-dashboard.py
+    
+    # Network configuration
+    networks:
+      - ddospot-network
+    
+    # Port mappings
+    ports:
+      - "5000:5000"   # Dashboard web interface
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - LOG_LEVEL=INFO
+    
+    # Volume mounts (shared with honeypot)
+    volumes:
+      - ./honeypot.db:/app/honeypot.db
+      - ./logs:/app/logs
+      - ./config:/app/config
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Depends on honeypot
+    depends_on:
+      - honeypot
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ddospot-prometheus
+    hostname: ddospot-prometheus
+    
+    # Network configuration
+    networks:
+      - ddospot-network
+    
+    # Port mappings
+    ports:
+      - "9090:9090"
+    
+    # Volume mounts
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    
+    # Command line arguments
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    # Restart policy
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ddospot-grafana
+    hostname: ddospot-grafana
+    
+    # Network configuration
+    networks:
+      - ddospot-network
+    
+    # Port mappings
+    ports:
+      - "3000:3000"
+    
+    # Environment variables
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_INSTALL_PLUGINS=redis-datasource
+    
+    # Volume mounts
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    # Depends on Prometheus
+    depends_on:
+      - prometheus
+    
+    # Restart policy
+    restart: unless-stopped
+
+  # AlertManager for alert routing and notification
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: ddospot-alertmanager
+    hostname: ddospot-alertmanager
+    
+    # Network configuration
+    networks:
+      - ddospot-network
+    
+    # Port mappings
+    ports:
+      - "9093:9093"
+    
+    # Volume mounts
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    
+    # Command line arguments
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    # Restart policy
+    restart: unless-stopped
+
+# Network definition
+networks:
+  ddospot-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1500
+
+# Named volumes for persistent data
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local

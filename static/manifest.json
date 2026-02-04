@@ -1,0 +1,85 @@
+{
+  "name": "DDoSPot Mobile Dashboard",
+  "short_name": "DDoSPot",
+  "description": "Real-time DDoS attack detection and response system with mobile monitoring",
+  "start_url": "/mobile",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#ff6b6b",
+  "background_color": "#0a0e27",
+  "categories": ["security", "utilities"],
+  "screenshots": [
+    {
+      "src": "/static/screenshots/mobile-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/static/screenshots/mobile-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/static/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/logo-mask-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Threats Overview",
+      "short_name": "Threats",
+      "description": "View current threats and attacks",
+      "url": "/mobile?tab=threats",
+      "icons": [
+        {
+          "src": "/static/icon-threats.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Alert Center",
+      "short_name": "Alerts",
+      "description": "Review security alerts",
+      "url": "/mobile?tab=alerts",
+      "icons": [
+        {
+          "src": "/static/icon-alerts.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "prefer_related_applications": false
+}

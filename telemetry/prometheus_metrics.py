@@ -3,8 +3,7 @@ Prometheus metrics collection for DDoSPoT honeypot system.
 Exposes comprehensive metrics for monitoring attack patterns, service health, and performance.
 """
 
-from prometheus_client import Counter, Gauge, Histogram, Info, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
-from prometheus_client.multiprocess import MultiProcessCollector
+from prometheus_client import Counter, Gauge, Histogram, Info, generate_latest, CollectorRegistry
 import time
 import psutil
 import os

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Health - DDoSPot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ff6b6b;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.healthy {
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+
+        .status-indicator.unhealthy {
+            background: #ff6b6b;
+            box-shadow: 0 0 10px #ff6b6b;
+        }
+
+        .status-indicator.unknown {
+            background: #f59e0b;
+            box-shadow: 0 0 10px #f59e0b;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .status-card {
+            background: #1a1f3a;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .status-card h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-value {
+            font-size: 16px;
+            color: #a0a0a0;
+            word-break: break-word;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.healthy {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+            border: 1px solid #4ade80;
+        }
+
+        .badge.unhealthy {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+
+        .badge.unknown {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-secondary {
+            background: #2a3f5f;
+            color: #e0e0e0;
+            border: 1px solid #ff6b6b;
+        }
+
+        .btn-secondary:hover {
+            background: #3a4f6f;
+            border-color: #ff5252;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #2a3f5f;
+            border-top-color: #ff6b6b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid #ff6b6b;
+            color: #ff9090;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .info-section {
+            background: #1a1f3a;
+            border-left: 4px solid #ff6b6b;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+
+        .info-section h3 {
+            font-size: 14px;
+            color: #ff6b6b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-section p {
+            font-size: 14px;
+            color: #a0a0a0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .status-card {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <h1>System Health</h1>
+        </div>
+
+        <div id="content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 16px; color: #a0a0a0;">Loading system health...</p>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <a href="/mobile" class="btn btn-secondary">← Back to Mobile Dashboard</a>
+            <a href="/" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        async function loadHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+
+                const statusClass = data.status || 'unknown';
+                const indicator = document.getElementById('statusIndicator');
+                indicator.className = `status-indicator ${statusClass}`;
+
+                let html = '';
+
+                // Main status card
+                html += `
+                    <div class="status-card">
+                        <h2>
+                            🏥 System Status
+                            <span class="badge ${statusClass}">${data.status || 'Unknown'}</span>
+                        </h2>
+                        <div class="status-value">
+                            The honeypot system is ${statusClass === 'healthy' ? 'running normally' : statusClass === 'unhealthy' ? 'experiencing issues' : 'in an unknown state'}.
+                        </div>
+                    </div>
+                `;
+
+                // Error details if unhealthy
+                if (data.error) {
+                    html += `
+                        <div class="error-message">
+                            <strong>Error Details:</strong><br>
+                            ${data.error}
+                        </div>
+                    `;
+                }
+
+                // Additional info sections
+                html += `
+                    <div class="info-section">
+                        <h3>📊 About This Check</h3>
+                        <p>This health check verifies that the database is responsive and the core system is functioning. A healthy status means the honeypot can collect and process attack data normally.</p>
+                    </div>
+
+                    <div class="info-section">
+                        <h3>🔧 What to Check</h3>
+                        <p>If the system shows as unhealthy, verify that:</p>
+                        <ul style="margin-left: 20px; margin-top: 8px;">
+                            <li>The database service is running</li>
+                            <li>Network connectivity is available</li>
+                            <li>Disk space is not full</li>
+                            <li>No system resource constraints</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-section">
+                        <h3>📝 Timestamp</h3>
+                        <p>${new Date().toLocaleString()}</p>
+                    </div>
+                `;
+
+                document.getElementById('content').innerHTML = html;
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="error-message">
+                        <strong>Failed to load health status:</strong><br>
+                        ${error.message}
+                    </div>
+                    <div class="info-section">
+                        <h3>💡 Troubleshooting</h3>
+                        <p>Unable to connect to the health check endpoint. This may indicate:</p>
+                        <ul style="margin-left: 20px; margin-top: 8px;">
+                            <li>The server is not responding</li>
+                            <li>Network connectivity issues</li>
+                            <li>The dashboard service is down</li>
+                        </ul>
+                    </div>
+                `;
+                document.getElementById('statusIndicator').className = 'status-indicator unknown';
+            }
+        }
+
+        // Load health on page load
+        window.addEventListener('load', loadHealth);
+
+        // Refresh every 10 seconds
+        setInterval(loadHealth, 10000);
+    </script>
+</body>
+</html>

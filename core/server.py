@@ -1,18 +1,31 @@
 import asyncio
 import socket
+import time
 from typing import List, Tuple, Optional, Any
 
-from core.config import TCP_PORTS, UDP_PORTS, THRESHOLD_PER_MIN, BLACKLIST_SECONDS
+from core.config import TCP_PORTS, UDP_PORTS, THRESHOLD_PER_MIN
 from core.protocol_handlers import (
     create_http_response,
     create_ssh_banner,
     create_ssdp_response,
     create_dns_response,
+    create_ftp_banner,
+    create_ftp_response,
+    create_telnet_banner,
+    create_telnet_response,
+    create_mysql_handshake,
+    create_mysql_response,
+    create_postgresql_startup,
+    create_postgresql_response,
+    create_redis_response,
+    create_mongodb_response,
     identify_protocol,
 )
 from core.state import HoneypotState
 from core.detection import AttackDetector
 from core.database import HoneypotDatabase
+from core.evasion_detection import get_evasion_manager
+from core.threat_intelligence import get_threat_intelligence_manager
 from telemetry.logger import get_logger
 from telemetry.alerts import get_alert_manager
 from ml.model import get_model
@@ -57,14 +70,63 @@ def initialize_state():
 
 def process_attack(source_ip: str, port: int, protocol: str, payload_size: int, event_type: str = "connection"):
     """Process an attack event and determine if blacklisting is needed"""
+    logger.debug(f"process_attack called: {source_ip}:{port} {protocol} {event_type} (state={_state is not None}, detector={_detector is not None}, db={_db is not None})")
     if not _state or not _detector or not _db:
+        logger.error(f"process_attack called but globals not initialized")
         return
     
     # Record event in database
+    logger.debug(f"Adding event to database: {source_ip}:{port} {protocol} {payload_size} bytes {event_type}")
     _db.add_event(source_ip, port, protocol, payload_size, event_type)
     
     # Record the event in state
     _state.record_event(source_ip, port, protocol, payload_size, event_type)
+    
+    # Perform evasion detection
+    try:
+        evasion_manager = get_evasion_manager()
+        # Create dummy payload for analysis (size is what we have)
+        dummy_payload = b'x' * min(payload_size, 1024)
+        evasion_manager.record_event(source_ip, protocol, dummy_payload, time.time())
+        
+        # Perform comprehensive evasion analysis periodically
+        if _state.total_events % 50 == 0:  # Analyze every 50 events per IP
+            evasion_analysis = evasion_manager.analyze_evasion(source_ip, dummy_payload)
+            if evasion_analysis['overall_evasion_score'] > 0.3:
+                # Store in database
+                _db.add_evasion_detection(
+                    source_ip,
+                    evasion_analysis['threat_level'],
+                    evasion_analysis['overall_evasion_score'],
+                    evasion_analysis['threat_level'],
+                    evasion_analysis['detections'],
+                    time.time()
+                )
+                logger.warning(f"Evasion detected from {source_ip}: {evasion_analysis['threat_level']} ({evasion_analysis['overall_evasion_score']:.2%})")
+    except Exception as e:
+        logger.debug(f"Evasion detection error: {e}")
+    
+    # Perform threat intelligence analysis
+    try:
+        threat_manager = get_threat_intelligence_manager()
+        # Perform analysis periodically (every 100 events)
+        if _state.total_events % 100 == 0:
+            threat_analysis = threat_manager.analyze_ip(source_ip, protocol, payload_size)
+            # Store results in database
+            _db.save_threat_intelligence_score(
+                source_ip,
+                threat_analysis['reputation'].get('score', 0),
+                threat_analysis['geolocation'].get('risk_score', 0),
+                min(100, threat_analysis['threat_feeds'].get('matches', 0) * 20),
+                threat_analysis['trends'].get('trend_score', 0),
+                threat_analysis['composite_threat_score'],
+                threat_analysis['threat_level'],
+                threat_analysis['recommendations']
+            )
+            if threat_analysis['composite_threat_score'] > 60:
+                logger.warning(f"Threat intelligence alert for {source_ip}: {threat_analysis['threat_level']} ({threat_analysis['composite_threat_score']:.1f})")
+    except Exception as e:
+        logger.debug(f"Threat intelligence error: {e}")
     
     # Analyze if blacklisting is warranted
     should_blacklist, reason, duration = _detector.analyze_attack(_state, source_ip)
@@ -171,12 +233,28 @@ async def _handle_tcp_client(
             await writer.wait_closed()
             return
         
-        # For SSH, send banner immediately
-        if port == 2222 or port == 22:
+        # Send appropriate banner for the protocol
+        banner = None
+        if port == 2222 or port == 22:  # SSH
             banner = create_ssh_banner()
+            logger.info(f"SSH banner prepared for {peer}")
+        elif port == 21:  # FTP
+            banner = create_ftp_banner()
+            logger.info(f"FTP banner prepared for {peer}")
+        elif port == 23:  # Telnet
+            banner = create_telnet_banner()
+            logger.info(f"Telnet banner prepared for {peer}")
+        elif port == 3306:  # MySQL
+            banner = create_mysql_handshake()
+            logger.info(f"MySQL handshake prepared for {peer}")
+        elif port == 5432:  # PostgreSQL
+            banner = create_postgresql_startup()
+            logger.info(f"PostgreSQL startup prepared for {peer}")
+        
+        # Send banner if we have one
+        if banner:
             writer.write(banner)
             await writer.drain()
-            logger.info(f"SSH banner sent to {peer}")
         
         # Read client data
         data = await asyncio.wait_for(reader.read(1024), timeout=5.0)
@@ -187,12 +265,33 @@ async def _handle_tcp_client(
             protocol = identify_protocol(data, port)
             process_attack(source_ip, port, protocol, len(data), "tcp_data")
             
-            # Send appropriate response
+            # Send appropriate response based on protocol
             response = None
             
             if protocol == 'http':
                 response = create_http_response(data)
-                logger.info(f"HTTP attack detected from {peer}")
+                logger.info(f"HTTP response prepared for {peer}")
+            elif protocol == 'ssh':
+                # SSH is handled via banner + follow-up - response would be minimal
+                response = None
+            elif protocol == 'ftp':
+                response = create_ftp_response(data)
+                logger.info(f"FTP response prepared for {peer}")
+            elif protocol == 'telnet':
+                response = create_telnet_response(data)
+                logger.info(f"Telnet response prepared for {peer}")
+            elif protocol == 'mysql':
+                response = create_mysql_response(data)
+                logger.info(f"MySQL response prepared for {peer}")
+            elif protocol == 'postgresql':
+                response = create_postgresql_response(data)
+                logger.info(f"PostgreSQL response prepared for {peer}")
+            elif protocol == 'redis':
+                response = create_redis_response(data)
+                logger.info(f"Redis response prepared for {peer}")
+            elif protocol == 'mongodb':
+                response = create_mongodb_response(data)
+                logger.info(f"MongoDB response prepared for {peer}")
             
             # Send response if we created one
             if response:

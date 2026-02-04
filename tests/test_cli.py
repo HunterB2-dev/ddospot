@@ -13,7 +13,7 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cli import _get_api_token, _log_rotation_settings, rotate_log
+from app.cli import _get_api_token, _log_rotation_settings, rotate_log
 import json
 
 

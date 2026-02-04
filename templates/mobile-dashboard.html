@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DDoSPot">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/logo-192.png">
+    <title>DDoSPot Mobile - Real-time Threat Monitor</title>
+    <link rel="stylesheet" href="/static/mobile-dashboard.css">
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-bar-content">
+                <div class="time" id="time">10:30</div>
+                <div class="signal">
+                    <span class="signal-icon">📡</span>
+                    <span class="online-badge" id="onlineStatus">Online</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="mobile-header">
+            <div class="header-content">
+                <h1 class="header-title">DDoSPot</h1>
+                <div class="header-stats">
+                    <span class="stat-badge active" id="activeCount">0</span>
+                    <span class="stat-label">Active Threats</span>
+                </div>
+            </div>
+            <button class="menu-btn" id="menuBtn">☰</button>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="mobile-tabs">
+            <button class="tab-btn active" data-tab="overview">Overview</button>
+            <button class="tab-btn" data-tab="threats">Threats</button>
+            <button class="tab-btn" data-tab="alerts">Alerts</button>
+            <button class="tab-btn" data-tab="control">Control</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="mobile-content">
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overview">
+                <div class="card-section">
+                    <!-- Quick Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalEvents">0</div>
+                            <div class="stat-label">Total Events</div>
+                            <div class="stat-change positive">↑ +0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="uniqueIPs">0</div>
+                            <div class="stat-label">Unique IPs</div>
+                            <div class="stat-change">Last 24h</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="blocked">0</div>
+                            <div class="stat-label">IPs Blocked</div>
+                            <div class="stat-change positive">⏸ Active</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="successRate">100%</div>
+                            <div class="stat-label">Detection Rate</div>
+                            <div class="stat-change">Last Hour</div>
+                        </div>
+                    </div>
+
+                    <!-- Top Attackers Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔴 Top Attackers</h3>
+                            <span class="card-time" id="topAttackersTime">Now</span>
+                        </div>
+                        <div class="attackers-list" id="topAttackersList">
+                            <div class="placeholder">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- System Health Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>⚙️ System Health</h3>
+                        </div>
+                        <div class="health-items">
+                            <div class="health-item">
+                                <div class="health-label">SSH Service</div>
+                                <div class="health-status running">●</div>
+                            </div>
+                            <div class="health-item">
+                                <div class="health-label">HTTP Service</div>
+                                <div class="health-status running">●</div>
+                            </div>
+                            <div class="health-item">
+                                <div class="health-label">SSDP Service</div>
+                                <div class="health-status running">●</div>
+                            </div>
+                            <div class="health-item">
+                                <div class="health-label">Database</div>
+                                <div class="health-status running">●</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Protocol Distribution Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📊 Protocol Breakdown</h3>
+                        </div>
+                        <div class="protocol-bars">
+                            <div class="protocol-bar">
+                                <div class="bar-label">SSH</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: 45%; background: #ff6b6b;" id="sshBar"></div>
+                                </div>
+                                <div class="bar-value" id="sshValue">45%</div>
+                            </div>
+                            <div class="protocol-bar">
+                                <div class="bar-label">HTTP</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: 35%; background: #4ecdc4;" id="httpBar"></div>
+                                </div>
+                                <div class="bar-value" id="httpValue">35%</div>
+                            </div>
+                            <div class="protocol-bar">
+                                <div class="bar-label">SSDP</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: 20%; background: #ffe66d;" id="ssdpBar"></div>
+                                </div>
+                                <div class="bar-value" id="ssdpValue">20%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threats Tab -->
+            <div class="tab-content" id="threats">
+                <div class="card-section">
+                    <div class="filter-bar">
+                        <input type="text" class="search-input" id="threatSearch" placeholder="Search IP address...">
+                        <button class="filter-btn" id="filterBtn">⚙️</button>
+                    </div>
+
+                    <div class="threats-list" id="threatsList">
+                        <div class="placeholder">Loading threats...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts Tab -->
+            <div class="tab-content" id="alerts">
+                <div class="card-section">
+                    <div class="alerts-filter">
+                        <button class="filter-toggle active" data-severity="all">All</button>
+                        <button class="filter-toggle" data-severity="critical">🔴 Critical</button>
+                        <button class="filter-toggle" data-severity="warning">🟡 Warning</button>
+                        <button class="filter-toggle" data-severity="info">🔵 Info</button>
+                    </div>
+
+                    <div class="alerts-list" id="alertsList">
+                        <div class="placeholder">No alerts</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Tab -->
+            <div class="tab-content" id="control">
+                <div class="card-section">
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>⚡ Quick Actions</h3>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn" id="pauseBtn">
+                                <span class="action-icon">⏸</span>
+                                <span class="action-text">Pause Detection</span>
+                            </button>
+                            <button class="action-btn" id="clearBlockBtn">
+                                <span class="action-icon">🗑️</span>
+                                <span class="action-text">Clear Blocks</span>
+                            </button>
+                            <button class="action-btn" id="exportBtn">
+                                <span class="action-icon">📥</span>
+                                <span class="action-text">Export Data</span>
+                            </button>
+                            <button class="action-btn" id="settingsBtn">
+                                <span class="action-icon">⚙️</span>
+                                <span class="action-text">Settings</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service Controls -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔧 Service Controls</h3>
+                        </div>
+                        <div class="service-controls">
+                            <div class="service-control">
+                                <span class="service-name">SSH Honeypot</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked id="sshToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="service-control">
+                                <span class="service-name">HTTP Honeypot</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked id="httpToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="service-control">
+                                <span class="service-name">SSDP Honeypot</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked id="ssdpToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔔 Notifications</h3>
+                        </div>
+                        <div class="notification-settings">
+                            <div class="setting-item">
+                                <label class="setting-label">Push Notifications</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked id="pushToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Critical Alerts Only</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="criticalOnlyToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="bottom-bar">
+            <button class="bottom-btn active" data-action="refresh">
+                <span>⚡</span>
+                <span class="refresh-interval" id="refreshInterval">Real-time</span>
+            </button>
+            <button class="bottom-btn" data-action="fullscreen">
+                <span>⛶</span>
+                <span>Fullscreen</span>
+            </button>
+            <button class="bottom-btn" data-action="help">
+                <span>❓</span>
+                <span>Help</span>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="menu-overlay" id="menuOverlay"></div>
+            <div class="menu-panel">
+                <div class="menu-header">
+                    <h2>Menu</h2>
+                    <button class="close-btn" id="closeMenuBtn">✕</button>
+                </div>
+                <nav class="menu-nav">
+                    <a href="/advanced" class="menu-item">📊 Full Dashboard</a>
+                    <a href="/settings" class="menu-item">⚙️ Settings</a>
+                    <a href="/health-status" class="menu-item">🏥 System Health</a>
+                    <a href="#" class="menu-item" id="offlineToggle">📡 Go Offline</a>
+                    <a href="#" class="menu-item" id="logoutBtn">🚪 Logout</a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- PWA Install Prompt -->
+        <div class="pwa-prompt" id="pwaPrompt">
+            <div class="pwa-content">
+                <div class="pwa-icon">📱</div>
+                <div class="pwa-text">
+                    <h3>Install DDoSPot</h3>
+                    <p>Access real-time threat monitoring anywhere</p>
+                </div>
+                <button class="pwa-btn install" id="pwaInstall">Install</button>
+                <button class="pwa-btn dismiss" id="pwaDismiss">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/mobile-dashboard.js"></script>
+</body>
+</html>

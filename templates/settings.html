@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDoSPot - Settings</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <link rel="stylesheet" href="/static/settings.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🛠️ DDoSPot Settings</h1>
+                <p>Configure honeypot behavior, alerts, and system preferences</p>
+                <a href="/mobile" class="btn btn-secondary">← Back to Mobile Dashboard</a>
+            </div>
+        </header>
+
+        <!-- Main Settings Area -->
+        <div class="settings-wrapper">
+            <!-- Tab Navigation -->
+            <div class="settings-tabs">
+                <button class="tab-button active" data-tab="honeypot">🍯 Honeypot</button>
+                <button class="tab-button" data-tab="alerts">🔔 Alerts</button>
+                <button class="tab-button" data-tab="responses">⚡ Responses</button>
+                <button class="tab-button" data-tab="system">⚙️ System</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="settings-content">
+
+                <!-- Honeypot Tab -->
+                <div id="honeypot-tab" class="tab-content active">
+                    <h2>Honeypot Services Configuration</h2>
+                    <div id="honeypot-status" class="status-indicators"></div>
+                    
+                    <form id="honeypot-form" class="settings-form">
+                        <!-- SSH Service -->
+                        <div class="form-section">
+                            <h3>SSH Service (Port 2222)</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="honeypot_ssh_enabled" name="honeypot_ssh_enabled">
+                                    Enable SSH Service
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="honeypot_ssh_port">SSH Port:</label>
+                                <input type="number" id="honeypot_ssh_port" name="honeypot_ssh_port" 
+                                       min="1024" max="65535" value="2222" class="form-control">
+                            </div>
+                        </div>
+
+                        <!-- HTTP Service -->
+                        <div class="form-section">
+                            <h3>HTTP Service (Port 8080)</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="honeypot_http_enabled" name="honeypot_http_enabled">
+                                    Enable HTTP Service
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="honeypot_http_port">HTTP Port:</label>
+                                <input type="number" id="honeypot_http_port" name="honeypot_http_port" 
+                                       min="1024" max="65535" value="8080" class="form-control">
+                            </div>
+                        </div>
+
+                        <!-- SSDP Service -->
+                        <div class="form-section">
+                            <h3>SSDP Service (Port 1900)</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="honeypot_ssdp_enabled" name="honeypot_ssdp_enabled">
+                                    Enable SSDP Service
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="honeypot_ssdp_port">SSDP Port:</label>
+                                <input type="number" id="honeypot_ssdp_port" name="honeypot_ssdp_port" 
+                                       min="1024" max="65535" value="1900" class="form-control">
+                            </div>
+                        </div>
+
+                        <!-- Logging -->
+                        <div class="form-section">
+                            <h3>Logging Configuration</h3>
+                            <div class="form-group">
+                                <label for="honeypot_log_level">Log Level:</label>
+                                <select id="honeypot_log_level" name="honeypot_log_level" class="form-control">
+                                    <option value="DEBUG">Debug</option>
+                                    <option value="INFO" selected>Info</option>
+                                    <option value="WARNING">Warning</option>
+                                    <option value="ERROR">Error</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Save Honeypot Settings</button>
+                            <button type="reset" class="btn btn-secondary">↻ Reset</button>
+                            <span id="honeypot-status-msg" class="status-message"></span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Alerts Tab -->
+                <div id="alerts-tab" class="tab-content">
+                    <h2>Alert Configuration</h2>
+                    
+                    <form id="alerts-form" class="settings-form">
+                        <!-- Event Thresholds -->
+                        <div class="form-section">
+                            <h3>Alert Thresholds</h3>
+                            <div class="form-group">
+                                <label for="alert_event_threshold">Event Threshold (events/minute):</label>
+                                <input type="number" id="alert_event_threshold" name="alert_event_threshold" 
+                                       min="1" max="1000" value="10" class="form-control">
+                                <small>Alert when events exceed this rate</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="alert_unique_ip_threshold">Unique IP Threshold (IPs/hour):</label>
+                                <input type="number" id="alert_unique_ip_threshold" name="alert_unique_ip_threshold" 
+                                       min="1" max="10000" value="5" class="form-control">
+                                <small>Alert when unique IPs exceed this count</small>
+                            </div>
+                        </div>
+
+                        <!-- Alert Channels -->
+                        <div class="form-section">
+                            <h3>Alert Channels</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="alert_enable_email" name="alert_enable_email">
+                                    Enable Email Alerts
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="alert_enable_webhook" name="alert_enable_webhook">
+                                    Enable Webhook Alerts
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="alert_enable_slack" name="alert_enable_slack">
+                                    Enable Slack Alerts
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="test-alert-btn">🧪 Test Alert</button>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Save Alert Settings</button>
+                            <button type="reset" class="btn btn-secondary">↻ Reset</button>
+                            <span id="alerts-status-msg" class="status-message"></span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Response Actions Tab -->
+                <div id="responses-tab" class="tab-content">
+                    <h2>Response Actions Configuration</h2>
+                    
+                    <form id="responses-form" class="settings-form">
+                        <!-- Auto-blocking -->
+                        <div class="form-section">
+                            <h3>Automatic IP Blocking</h3>
+                            <div class="form-group">
+                                <label for="response_auto_block_threshold">Auto-Block Threat Score Threshold (0-10):</label>
+                                <input type="number" id="response_auto_block_threshold" name="response_auto_block_threshold" 
+                                       min="0" max="10" step="0.5" value="7.0" class="form-control">
+                                <small>IPs with threat score ≥ this value will be automatically blocked</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="response_block_duration">Block Duration (hours):</label>
+                                <input type="number" id="response_block_duration" name="response_block_duration" 
+                                       min="1" max="720" value="24" class="form-control">
+                                <small>How long to block an IP</small>
+                            </div>
+                        </div>
+
+                        <!-- Webhooks -->
+                        <div class="form-section">
+                            <h3>Webhook Configuration</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="response_enable_webhooks" name="response_enable_webhooks" checked>
+                                    Enable Webhook Notifications
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="webhook_url">Webhook URL (optional):</label>
+                                <input type="url" id="webhook_url" name="webhook_url" placeholder="https://webhook.example.com/hook"
+                                       class="form-control">
+                                <button type="button" class="btn btn-secondary" id="test-webhook-btn">🧪 Test Webhook</button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Save Response Settings</button>
+                            <button type="reset" class="btn btn-secondary">↻ Reset</button>
+                            <span id="responses-status-msg" class="status-message"></span>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- System Tab -->
+                <div id="system-tab" class="tab-content">
+                    <h2>System Preferences</h2>
+                    
+                    <form id="system-form" class="settings-form">
+                        <!-- UI Preferences -->
+                        <div class="form-section">
+                            <h3>User Interface</h3>
+                            <div class="form-group">
+                                <label for="ui_theme">Theme:</label>
+                                <select id="ui_theme" name="ui_theme" class="form-control">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ui_refresh_interval">Dashboard Refresh Interval (seconds):</label>
+                                <input type="number" id="ui_refresh_interval" name="ui_refresh_interval" 
+                                       min="1" max="60" value="5" class="form-control">
+                            </div>
+                        </div>
+
+                        <!-- Data Management -->
+                        <div class="form-section">
+                            <h3>Data Management</h3>
+                            <div class="form-group">
+                                <label for="ui_data_retention_days">Data Retention (days):</label>
+                                <input type="number" id="ui_data_retention_days" name="ui_data_retention_days" 
+                                       min="1" max="365" value="90" class="form-control">
+                                <small>Events older than this will be archived or deleted</small>
+                            </div>
+                        </div>
+
+                        <!-- Backup Settings -->
+                        <div class="form-section">
+                            <h3>Backup Configuration</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="system_backup_enabled" name="system_backup_enabled" checked>
+                                    Enable Automatic Backups
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="system_backup_schedule">Backup Schedule (cron format):</label>
+                                <input type="text" id="system_backup_schedule" name="system_backup_schedule" 
+                                       placeholder="0 2 * * *" value="0 2 * * *" class="form-control">
+                                <small>Daily at 2 AM by default</small>
+                            </div>
+                        </div>
+
+                        <!-- System Actions -->
+                        <div class="form-section">
+                            <h3>System Actions</h3>
+                            <button type="button" class="btn btn-warning" id="restart-services-btn">🔄 Restart Services</button>
+                            <small>Restart honeypot and dashboard services</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Save System Settings</button>
+                            <button type="reset" class="btn btn-secondary">↻ Reset</button>
+                            <span id="system-status-msg" class="status-message"></span>
+                        </div>
+                    </form>
+                </div>
+
+            </div> <!-- settings-content -->
+        </div> <!-- settings-wrapper -->
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>DDoSPot v1.0 | Configuration Management (Feature #11) | 
+               <a href="/api/config/honeypot">API Docs</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="/static/settings.js"></script>
+</body>
+</html>

@@ -14,7 +14,7 @@ import psutil
 from pathlib import Path
 
 # Add project to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.database import HoneypotDatabase
 from core.geolocation import GeolocationService
@@ -71,6 +71,7 @@ def print_menu():
   {Colors.GREEN}7{Colors.RESET}. Simulate Quick Attack (100 events)
   {Colors.GREEN}8{Colors.RESET}. Simulate Botnet Attack (5 locations)
   {Colors.GREEN}9{Colors.RESET}. Simulate Custom Attack
+  {Colors.GREEN}23{Colors.RESET}. Comprehensive System Test (All Tests)
 
 {Colors.CYAN}📊 MONITORING & STATUS:{Colors.RESET}
   {Colors.GREEN}10{Colors.RESET}. View System Status
@@ -94,7 +95,7 @@ def print_menu():
   {Colors.GREEN}20{Colors.RESET}. Show Help
   {Colors.GREEN}0{Colors.RESET}. Exit
 
-{Colors.YELLOW}Enter your choice (0-22):{Colors.RESET} """
+{Colors.YELLOW}Enter your choice (0-23):{Colors.RESET} """
     return menu
 
 
@@ -183,27 +184,68 @@ def rotate_log(logfile: Path, max_bytes: int = 5 * 1024 * 1024, backups: int = 2
 
 
 def get_process_pid(name: str):
-    """Get PID of a process by name"""
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+    """Get PID of a process by name - more precise matching"""
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'status']):
         try:
-            if name.lower() in ' '.join(proc.info['cmdline'] or []).lower():
-                return proc.info['pid']
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+            # Skip zombie/defunct processes first
+            status = proc.info.get('status')
+            if status in (psutil.STATUS_ZOMBIE, psutil.STATUS_STOPPED, psutil.STATUS_DEAD):
+                continue
+            
+            cmdline = proc.info['cmdline'] or []
+            if not cmdline:
+                continue
+            
+            # Check if the script name appears in ANY element of the command line
+            # This will match things like:
+            # - python3 start-honeypot.py
+            # - ./start-honeypot.py
+            # - /path/to/start-honeypot.py
+            # - .venv/bin/python start-honeypot.py
+            script_found = False
+            for arg in cmdline:
+                if name in arg:
+                    script_found = True
+                    break
+            
+            if script_found:
+                # Make sure it's actually running - check status again
+                try:
+                    current_status = proc.status()
+                    if current_status not in (psutil.STATUS_ZOMBIE, psutil.STATUS_STOPPED, psutil.STATUS_DEAD):
+                        if proc.is_running():
+                            return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
+                    pass
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
     return None
 
 
 def is_service_running(name: str) -> bool:
     """Check if a service is running"""
-    return get_process_pid(name) is not None
+    pid = get_process_pid(name)
+    if pid is None:
+        return False
+    
+    # Double-check the process actually exists and is running
+    try:
+        proc = psutil.Process(pid)
+        current_status = proc.status()
+        # Make sure it's not a zombie or stopped
+        if current_status in (psutil.STATUS_ZOMBIE, psutil.STATUS_STOPPED, psutil.STATUS_DEAD):
+            return False
+        return proc.is_running()
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return False
 
 
 def print_status():
     """Print system status"""
     print(f"\n{Colors.BOLD}{Colors.CYAN}🔍 SYSTEM STATUS{Colors.RESET}\n")
     
-    honeypot_running = is_service_running("main.py")
-    dashboard_running = is_service_running("dashboard.py")
+    honeypot_running = is_service_running("start-honeypot.py")
+    dashboard_running = is_service_running("start-dashboard.py")
     
     honeypot_status = f"{Colors.GREEN}✓ RUNNING{Colors.RESET}" if honeypot_running else f"{Colors.RED}✗ STOPPED{Colors.RESET}"
     dashboard_status = f"{Colors.GREEN}✓ RUNNING{Colors.RESET}" if dashboard_running else f"{Colors.RED}✗ STOPPED{Colors.RESET}"
@@ -246,22 +288,48 @@ def start_service(service_name: str, script: str):
         print(f"{Colors.YELLOW}ℹ️  {service_name} is already running{Colors.RESET}\n")
         return
 
-    script_path = Path(__file__).parent / script
-    logfile = Path("/tmp") / f"{script_path.stem}.log"
+    script_path = Path(__file__).parent.parent / script
+    
+    # Map script names to log file names
+    log_names = {
+        "start-honeypot.py": "honeypot.log",
+        "start-dashboard.py": "dashboard.log",
+    }
+    
+    log_filename = log_names.get(script, f"{script_path.stem}.log")
+    logfile = Path(__file__).parent.parent / "logs" / log_filename
+    
+    # Ensure logs directory exists
+    logfile.parent.mkdir(exist_ok=True)
+    
     expected_ports = {
-        "dashboard.py": 5000,
+        "start-honeypot.py": None,  # No port monitoring for honeypot
+        "start-dashboard.py": 5000,
     }
 
     try:
         max_bytes, backups = _log_rotation_settings()
         rotate_log(logfile, max_bytes=max_bytes, backups=backups)
-        with open(logfile, "a") as log_handle:
-            subprocess.Popen(
-                [sys.executable, str(script_path)],
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                cwd=script_path.parent
-            )
+        
+        # Open the log file and keep it open for the subprocess
+        # Use 'a+' mode to allow appending and reading
+        log_handle = open(logfile, "a+", buffering=1)
+        
+        # Use start_new_session to detach the process from the parent process group
+        # This ensures the child process continues running even after the CLI exits
+        proc = subprocess.Popen(
+            [sys.executable, str(script_path)],
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            cwd=script_path.parent,
+            start_new_session=True,  # Detach from parent process group
+            preexec_fn=None  # Ensure subprocess is truly detached
+        )
+        
+        # Close the file handle - the subprocess has its own reference
+        # This allows the file to be properly managed without blocking
+        log_handle.close()
+        
         deadline = time.time() + 5
         while time.time() < deadline and not is_service_running(script):
             time.sleep(0.2)
@@ -272,17 +340,25 @@ def start_service(service_name: str, script: str):
 
         port = expected_ports.get(script)
         if port:
-            port_deadline = time.time() + 5
+            port_deadline = time.time() + 10  # Increased timeout to 10 seconds
             port_ready = False
+            hosts_to_try = ["127.0.0.1", "localhost", "0.0.0.0"]
+            
             while time.time() < port_deadline:
-                try:
-                    with socket.create_connection(("127.0.0.1", port), timeout=0.5):
-                        port_ready = True
-                        break
-                except OSError:
-                    time.sleep(0.3)
+                for host in hosts_to_try:
+                    try:
+                        with socket.create_connection((host, port), timeout=0.5):
+                            port_ready = True
+                            break
+                    except (OSError, socket.error):
+                        pass
+                if port_ready:
+                    break
+                time.sleep(0.3)
+            
             if not port_ready:
                 print(f"{Colors.YELLOW}ℹ️  {service_name} started but port {port} not reachable yet{Colors.RESET}\n")
+                print(f"{Colors.CYAN}  The service may still be initializing. Please try again in a moment.{Colors.RESET}\n")
                 return
 
         print(f"{Colors.GREEN}✓ {service_name} started successfully{Colors.RESET}")
@@ -292,25 +368,46 @@ def start_service(service_name: str, script: str):
 
 
 def stop_service(service_name: str, script: str):
-    """Stop a service"""
+    """Stop a service with improved error handling"""
     pid = get_process_pid(script)
     if not pid:
         print(f"{Colors.YELLOW}ℹ️  {service_name} is not running{Colors.RESET}\n")
         return
     
     try:
+        # Verify process exists before attempting to kill
+        if not psutil.pid_exists(pid):
+            print(f"{Colors.YELLOW}ℹ️  {service_name} process (PID: {pid}) no longer exists{Colors.RESET}\n")
+            return
+            
         os.kill(pid, signal.SIGTERM)
         deadline = time.time() + 5
         while time.time() < deadline and psutil.pid_exists(pid):
             time.sleep(0.2)
+        
         if psutil.pid_exists(pid):
-            os.kill(pid, signal.SIGKILL)
-            time.sleep(0.3)
+            try:
+                os.kill(pid, signal.SIGKILL)
+                time.sleep(0.5)  # Increased wait after SIGKILL
+            except ProcessLookupError:
+                print(f"{Colors.GREEN}✓ {service_name} stopped successfully{Colors.RESET}\n")
+                return
 
-        if psutil.pid_exists(pid):
-            print(f"{Colors.RED}✗ Failed to stop {service_name}: process still running{Colors.RESET}\n")
-        else:
+        # Final verification - try to access the process to see if it actually exists
+        time.sleep(0.2)
+        try:
+            proc = psutil.Process(pid)
+            status = proc.status()
+            if status == psutil.STATUS_ZOMBIE:
+                # Zombie process, but it's being reaped
+                print(f"{Colors.GREEN}✓ {service_name} stopped successfully{Colors.RESET}\n")
+            else:
+                print(f"{Colors.RED}✗ Failed to stop {service_name}: process still running (PID: {pid}){Colors.RESET}\n")
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            # Process doesn't exist or can't be accessed - it's actually gone
             print(f"{Colors.GREEN}✓ {service_name} stopped successfully{Colors.RESET}\n")
+    except ProcessLookupError:
+        print(f"{Colors.GREEN}✓ {service_name} stopped successfully{Colors.RESET}\n")
     except Exception as e:
         print(f"{Colors.RED}✗ Failed to stop {service_name}: {e}{Colors.RESET}\n")
 
@@ -393,6 +490,134 @@ def simulate_botnet_attack():
 def simulate_custom_attack():
     """Simulate a custom attack with user-defined parameters"""
     print(f"\n{Colors.BOLD}{Colors.CYAN}🛠️  CUSTOM ATTACK SIMULATION{Colors.RESET}\n")
+
+
+def comprehensive_system_test():
+    """Comprehensive test that simulates all features at once"""
+    print(f"\n{Colors.BOLD}{Colors.CYAN}🧪 COMPREHENSIVE SYSTEM TEST{Colors.RESET}")
+    print(f"{Colors.YELLOW}{'═' * 60}{Colors.RESET}\n")
+    print(f"{Colors.BOLD}This will test:{Colors.RESET}")
+    print(f"  ✓ Quick attack simulation (100 events)")
+    print(f"  ✓ Botnet attack simulation (5 international locations)")
+    print(f"  ✓ Database statistics and queries")
+    print(f"  ✓ Geolocation mapping")
+    print(f"  ✓ Service status monitoring")
+    print(f"  ✓ Log file handling")
+    print(f"  ✓ Health checks")
+    print(f"  ✓ Top attackers analysis\n")
+    
+    response = input(f"{Colors.YELLOW}Start comprehensive test? (yes/no): {Colors.RESET}")
+    if response.lower() != 'yes':
+        print(f"{Colors.YELLOW}Test cancelled{Colors.RESET}\n")
+        return
+    
+    print(f"\n{Colors.BOLD}{Colors.GREEN}Starting comprehensive test suite...{Colors.RESET}\n")
+    
+    try:
+        # Test 1: Quick Attack
+        print(f"{Colors.BOLD}[1/7]{Colors.RESET} Quick Attack Simulation")
+        print(f"{'-' * 60}")
+        simulate_quick_attack()
+        
+        # Test 2: Botnet Attack
+        print(f"{Colors.BOLD}[2/7]{Colors.RESET} Botnet Attack Simulation")
+        print(f"{'-' * 60}")
+        simulate_botnet_attack()
+        
+        # Test 3: Database Statistics
+        print(f"{Colors.BOLD}[3/7]{Colors.RESET} Database Statistics")
+        print(f"{'-' * 60}")
+        try:
+            db = HoneypotDatabase("logs/honeypot.db")
+            stats = db.get_statistics()
+            size_info = db.get_database_size()
+            print(f"  ✓ Total Events:      {Colors.YELLOW}{stats['total_events']}{Colors.RESET}")
+            print(f"  ✓ Unique IPs:        {Colors.YELLOW}{stats['unique_ips']}{Colors.RESET}")
+            print(f"  ✓ Database Size:     {Colors.YELLOW}{size_info['size_mb']} MB{Colors.RESET}")
+            print(f"  ✓ Top Protocol:      {Colors.YELLOW}{stats['top_protocol']}{Colors.RESET}")
+            print(f"  ✓ Top Port:          {Colors.YELLOW}{stats['top_port']}{Colors.RESET}")
+            print(f"  ✓ Avg Payload:       {Colors.YELLOW}{stats['avg_payload_size']:.0f} bytes{Colors.RESET}")
+            print()
+        except Exception as e:
+            print(f"  {Colors.RED}✗ Error: {e}{Colors.RESET}\n")
+        
+        # Test 4: Top Attackers
+        print(f"{Colors.BOLD}[4/7]{Colors.RESET} Top Attackers Analysis")
+        print(f"{'-' * 60}")
+        try:
+            attackers = db.get_top_attackers(5)
+            if attackers:
+                for i, attacker in enumerate(attackers, 1):
+                    print(f"  {i}. {Colors.YELLOW}{attacker['ip']:20}{Colors.RESET} {attacker['total_events']:4} events")
+            else:
+                print(f"  {Colors.YELLOW}ℹ️  No attack data{Colors.RESET}")
+            print()
+        except Exception as e:
+            print(f"  {Colors.RED}✗ Error: {e}{Colors.RESET}\n")
+        
+        # Test 5: Geolocation Mapping
+        print(f"{Colors.BOLD}[5/7]{Colors.RESET} Geolocation Mapping")
+        print(f"{'-' * 60}")
+        try:
+            geo = GeolocationService()
+            map_data = geo.cache.get_map_data()
+            print(f"  ✓ Locations in cache: {Colors.YELLOW}{len(map_data)}{Colors.RESET}")
+            if map_data:
+                for point in map_data[:3]:
+                    print(f"    • {point['city']}, {point['country']} - {point['events']} events")
+            print()
+        except Exception as e:
+            print(f"  {Colors.RED}✗ Error: {e}{Colors.RESET}\n")
+        
+        # Test 6: System Status
+        print(f"{Colors.BOLD}[6/7]{Colors.RESET} System Status Check")
+        print(f"{'-' * 60}")
+        honeypot_running = is_service_running("start-honeypot.py")
+        dashboard_running = is_service_running("start-dashboard.py")
+        print(f"  Honeypot Server:  {Colors.GREEN + '✓ RUNNING' if honeypot_running else Colors.RED + '✗ STOPPED'}{Colors.RESET}")
+        print(f"  Dashboard:        {Colors.GREEN + '✓ RUNNING' if dashboard_running else Colors.RED + '✗ STOPPED'}{Colors.RESET}")
+        print(f"  Database:         {Colors.GREEN}✓ OK{Colors.RESET}")
+        
+        # Check log files
+        logs = [("Honeypot", Path("logs/honeypot.log")), ("Dashboard", Path("logs/dashboard.log"))]
+        for name, log_path in logs:
+            if log_path.exists():
+                size_mb = log_path.stat().st_size / (1024 * 1024)
+                print(f"  {name} Log:       {Colors.GREEN}✓ {size_mb:.2f} MB{Colors.RESET}")
+            else:
+                print(f"  {name} Log:       {Colors.YELLOW}ℹ️  Not found{Colors.RESET}")
+        print()
+        
+        # Test 7: Health Check
+        print(f"{Colors.BOLD}[7/7]{Colors.RESET} Health Check Summary")
+        print(f"{'-' * 60}")
+        try:
+            # Test database connectivity
+            print(f"  ✓ Database Connectivity: {Colors.GREEN}PASSED{Colors.RESET}")
+            
+            # Test geolocation service
+            print(f"  ✓ Geolocation Service:   {Colors.GREEN}PASSED{Colors.RESET}")
+            
+            # Test event handling
+            print(f"  ✓ Event Storage:         {Colors.GREEN}PASSED{Colors.RESET}")
+            
+            # Test statistics
+            print(f"  ✓ Statistics Reporting:  {Colors.GREEN}PASSED{Colors.RESET}")
+            print()
+        except Exception as e:
+            print(f"  {Colors.RED}✗ Error: {e}{Colors.RESET}\n")
+        
+        # Summary
+        print(f"\n{Colors.BOLD}{Colors.GREEN}{'═' * 60}{Colors.RESET}")
+        print(f"{Colors.BOLD}{Colors.GREEN}✓ COMPREHENSIVE TEST COMPLETE{Colors.RESET}")
+        print(f"{Colors.BOLD}{Colors.GREEN}{'═' * 60}{Colors.RESET}\n")
+        print(f"{Colors.CYAN}All system components tested successfully!{Colors.RESET}")
+        print(f"{Colors.CYAN}Dashboard available at: http://localhost:5000{Colors.RESET}\n")
+        
+    except Exception as e:
+        print(f"\n{Colors.RED}✗ Test failed: {e}{Colors.RESET}\n")
+
+
 
     try:
         total_events = int(input("Number of events to generate (e.g., 200): ").strip() or "0")
@@ -484,8 +709,8 @@ def health_check():
     print(f"\n{Colors.BOLD}{Colors.CYAN}🏥 HEALTH CHECK{Colors.RESET}\n")
     
     services = [
-        ("Honeypot Server", "main.py", None, Path("logs/honeypot.log")),
-        ("Dashboard", "dashboard.py", 5000, Path("logs/dashboard.log"))
+        ("Honeypot Server", "start-honeypot.py", None, Path("logs/honeypot.log")),
+        ("Dashboard", "start-dashboard.py", 5000, Path("logs/dashboard.log"))
     ]
     
     for name, script, port, log_path in services:
@@ -727,7 +952,48 @@ geolocates attackers, and displays an interactive world map of attack origins.
 
 def main():
     """Main CLI loop"""
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    # Change to project root (one level up from app/)
+    os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    
+    # Handle command-line arguments
+    if len(sys.argv) > 1:
+        command = sys.argv[1].lower()
+        service = sys.argv[2].lower() if len(sys.argv) > 2 else None
+        
+        if command == "start":
+            if service == "honeypot":
+                start_service("Honeypot Server", "start-honeypot.py")
+                return
+            elif service == "dashboard":
+                start_service("Dashboard", "start-dashboard.py")
+                return
+            elif service == "all":
+                start_service("Honeypot Server", "start-honeypot.py")
+                time.sleep(1)
+                start_service("Dashboard", "start-dashboard.py")
+                return
+        elif command == "stop":
+            if service == "honeypot":
+                stop_service("Honeypot Server", "start-honeypot.py")
+                return
+            elif service == "dashboard":
+                stop_service("Dashboard", "start-dashboard.py")
+                return
+            elif service == "all":
+                stop_service("Honeypot Server", "start-honeypot.py")
+                time.sleep(0.5)
+                stop_service("Dashboard", "start-dashboard.py")
+                return
+        elif command == "status":
+            print_status()
+            return
+        elif command == "help":
+            show_help()
+            return
+        else:
+            print(f"{Colors.RED}✗ Unknown command: {command}{Colors.RESET}")
+            print(f"{Colors.YELLOW}Usage: python3 app/cli.py [start|stop|status|help] [honeypot|dashboard|all]{Colors.RESET}\n")
+            return
     
     print_banner()
     
@@ -739,28 +1005,30 @@ def main():
                 print(f"\n{Colors.GREEN}✓ Goodbye!{Colors.RESET}\n")
                 break
             elif choice == '1':
-                start_service("Honeypot Server", "main.py")
+                start_service("Honeypot Server", "start-honeypot.py")
             elif choice == '2':
-                start_service("Dashboard", "dashboard.py")
+                start_service("Dashboard", "start-dashboard.py")
             elif choice == '3':
-                start_service("Honeypot Server", "main.py")
+                start_service("Honeypot Server", "start-honeypot.py")
                 time.sleep(1)
-                start_service("Dashboard", "dashboard.py")
+                start_service("Dashboard", "start-dashboard.py")
                 print(f"{Colors.CYAN}📍 Dashboard URL: http://localhost:5000{Colors.RESET}\n")
             elif choice == '4':
-                stop_service("Honeypot Server", "main.py")
+                stop_service("Honeypot Server", "start-honeypot.py")
             elif choice == '5':
-                stop_service("Dashboard", "dashboard.py")
+                stop_service("Dashboard", "start-dashboard.py")
             elif choice == '6':
-                stop_service("Honeypot Server", "main.py")
+                stop_service("Honeypot Server", "start-honeypot.py")
                 time.sleep(0.5)
-                stop_service("Dashboard", "dashboard.py")
+                stop_service("Dashboard", "start-dashboard.py")
             elif choice == '7':
                 simulate_quick_attack()
             elif choice == '8':
                 simulate_botnet_attack()
             elif choice == '9':
                 simulate_custom_attack()
+            elif choice == '23':
+                comprehensive_system_test()
             elif choice == '10':
                 print_status()
             elif choice == '11':

@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 from urllib.request import Request, urlopen
 from urllib.error import URLError
-from threading import Thread
 
 from telemetry.logger import get_logger
 

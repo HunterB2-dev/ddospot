@@ -4,8 +4,6 @@ Generates appropriate responses for different attack protocols.
 """
 
 import asyncio
-import socket
-from typing import Optional, Tuple
 from telemetry.logger import get_logger
 
 logger = get_logger(__name__)

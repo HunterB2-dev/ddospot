@@ -7,7 +7,6 @@ import asyncio
 import sqlite3
 import json
 import time
-from datetime import datetime, timedelta
 from typing import Optional, Dict
 import urllib.request
 import urllib.error
@@ -126,7 +125,8 @@ class GeolocationCache:
     def get_country_stats(self) -> Dict[str, int]:
         """Get statistics of attacks by country"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = sqlite3.connect(self.db_path, timeout=10)
+            conn.isolation_level = None  # Autocommit mode
             cursor = conn.cursor()
             
             # Count attacks per country from geolocation cache
@@ -144,13 +144,14 @@ class GeolocationCache:
             
             return {row[0]: row[1] for row in results}
         except Exception as e:
-            logger.error(f'Failed to get country stats: {e}')
+            logger.debug(f'Failed to get country stats (may retry): {e}')
             return {}
     
     def get_map_data(self) -> list:
         """Get geolocation data for map visualization"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = sqlite3.connect(self.db_path, timeout=10)
+            conn.isolation_level = None  # Autocommit mode
             cursor = conn.cursor()
             
             # Get all unique attacking IPs with their locations
@@ -188,7 +189,7 @@ class GeolocationCache:
             
             return data
         except Exception as e:
-            logger.error(f'Failed to get map data: {e}')
+            logger.debug(f'Failed to get map data (may retry): {e}')
             return []
 
 

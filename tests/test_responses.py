@@ -7,7 +7,9 @@ Run this to test if the honeypot servers respond correctly to attacks.
 import asyncio
 import socket
 import sys
+import pytest
 
+@pytest.mark.asyncio
 async def test_http():
     """Test HTTP response on port 8080"""
     print("\n[*] Testing HTTP (port 8080)...")
@@ -43,6 +45,7 @@ async def test_http():
                 pass
 
 
+@pytest.mark.asyncio
 async def test_ssh():
     """Test SSH banner on port 2222"""
     print("[*] Testing SSH (port 2222)...")
@@ -74,6 +77,7 @@ async def test_ssh():
                 pass
 
 
+@pytest.mark.asyncio
 async def test_ssdp():
     """Test SSDP response on port 1900"""
     print("[*] Testing SSDP (port 1900)...")

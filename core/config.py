@@ -1,6 +1,12 @@
 SERVICES = {
     "http": {"port": 8080, "protocol": "tcp"},
     "ssh": {"port": 2222, "protocol": "tcp"},
+    "ftp": {"port": 21, "protocol": "tcp"},
+    "telnet": {"port": 23, "protocol": "tcp"},
+    "mysql": {"port": 3306, "protocol": "tcp"},
+    "postgresql": {"port": 5432, "protocol": "tcp"},
+    "redis": {"port": 6379, "protocol": "tcp"},
+    "mongodb": {"port": 27017, "protocol": "tcp"},
     "ssdp": {"port": 1900, "protocol": "udp"},
 }
 

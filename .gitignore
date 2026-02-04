@@ -1,33 +1,16 @@
-# Environment & Secrets
-.env
-.env.local
-.env.*.local
-config/config.json
-config/alert_config.json
-config/.env.prod.template
-
-# Database & Logs
-logs/
-*.db
-*.sqlite
-*.log
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.coverage
-htmlcov/
-myenv/
+
+# Virtual Environments
 venv/
-.venv/
 env/
+ENV/
+myenv/
+.venv/
 
 # IDE
 .vscode/
@@ -37,7 +20,62 @@ env/
 *~
 .DS_Store
 
-# Runtime
-*.pid
-dashboard_output.log
+# Logs and databases with real data
+logs/
+logs/*.log
+*.log
+*.db
+*.pkl
+!logs/.gitkeep
+
+# Backup files
+*.backup
+backups/
+models/
+
+# Summary/temporary files
+PHASE*.txt
+TEST_RESULTS.txt
+*_SUMMARY.txt
+
+# Database runtime files
 honeypot.db
+ddospot.db
+*.bak
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Environment variables
+.env
+.env.local
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Documentation clutter
+TASK_*.md
+*_COMPLETE.md
+*_SUMMARY.md
+CLEANUP_*.md
+GITHUB_READY.md
+
+# Temporary files
+*.tmp
+/tmp/
+
+# Screenshots and media
+screenshots/
+*.png
+*.jpg
+*.gif
+!static/**/*.png
+!static/**/*.jpg
+!static/**/*.gif
+
+# OS
+Thumbs.db

@@ -4,7 +4,6 @@ Trained on historical attack patterns to predict attack types and intensity.
 """
 
 import pickle
-import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional

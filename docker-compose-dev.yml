@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # DDoSPot Honeypot Service (Development)
+  honeypot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddospot-honeypot-dev
+    
+    # Run honeypot
+    command: python start-honeypot.py
+    
+    # Network configuration
+    networks:
+      - ddospot-dev-network
+    
+    # Port mappings
+    ports:
+      - "2222:2222"
+      - "8080:8080"
+      - "1900:1900/udp"
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=DEBUG
+    
+    # Volume mounts
+    volumes:
+      - ./honeypot.db:/app/honeypot.db
+      - ./logs:/app/logs
+      - ./config:/app/config
+      - .:/app  # Mount entire app for live code changes
+    
+    # Restart policy
+    restart: on-failure
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # DDoSPot Dashboard Service (Development)
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddospot-dashboard-dev
+    
+    # Run dashboard
+    command: python start-dashboard.py
+    
+    # Network configuration
+    networks:
+      - ddospot-dev-network
+    
+    # Port mappings
+    ports:
+      - "5000:5000"
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - LOG_LEVEL=DEBUG
+    
+    # Volume mounts
+    volumes:
+      - ./honeypot.db:/app/honeypot.db
+      - ./logs:/app/logs
+      - ./config:/app/config
+      - .:/app  # Mount entire app for live code changes
+    
+    # Depends on honeypot
+    depends_on:
+      - honeypot
+    
+    # Restart policy
+    restart: on-failure
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+# Network definition
+networks:
+  ddospot-dev-network:
+    driver: bridge

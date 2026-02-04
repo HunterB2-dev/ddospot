@@ -1,0 +1,313 @@
+<!-- Threat Intelligence Dashboard Widget
+     Real-time threat visualization component for DDoSPot honeypot
+-->
+
+<!-- Threat Intelligence Container -->
+<div id="threat-intel-container" class="dashboard-section">
+  <h2 class="section-title">
+    <i class="icon-threat"></i> Threat Intelligence
+  </h2>
+
+  <!-- Status Indicator -->
+  <div class="threat-status-bar">
+    <div class="status-item">
+      <span class="label">System Status</span>
+      <span class="status-badge" id="ti-system-status">●</span>
+    </div>
+    <div class="status-item">
+      <span class="label">IPs Analyzed</span>
+      <span class="value" id="ti-ips-analyzed">0</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Critical Threats</span>
+      <span class="value" id="ti-critical-count">0</span>
+    </div>
+    <div class="status-item">
+      <span class="label">Last Update</span>
+      <span class="value" id="ti-last-update">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="threat-content-grid">
+
+    <!-- Left Column: Top Threats -->
+    <div class="threat-column threat-column-left">
+      <div class="threat-card">
+        <h3 class="card-title">
+          <i class="icon-alert"></i> Top Threats
+        </h3>
+        
+        <!-- Top Threats Table -->
+        <div class="threats-table-container">
+          <table class="threats-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>IP Address</th>
+                <th>Threat Score</th>
+                <th>Level</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="top-threats-tbody">
+              <!-- Populated by JavaScript -->
+              <tr class="loading">
+                <td colspan="5" class="text-center">Loading threats...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="table-pagination">
+          <button id="threats-prev" class="btn-small" disabled>← Previous</button>
+          <span id="threats-page" class="page-info">Page 1</span>
+          <button id="threats-next" class="btn-small">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Statistics & Distribution -->
+    <div class="threat-column threat-column-right">
+
+      <!-- Threat Distribution Card -->
+      <div class="threat-card">
+        <h3 class="card-title">
+          <i class="icon-chart"></i> Threat Distribution
+        </h3>
+        
+        <div class="distribution-container">
+          <div class="distribution-chart" id="threat-distribution-chart">
+            <!-- SVG pie chart populated by JavaScript -->
+          </div>
+          
+          <div class="distribution-legend">
+            <div class="legend-item" id="legend-critical">
+              <span class="legend-color critical"></span>
+              <span class="legend-label">Critical</span>
+              <span class="legend-count" data-level="CRITICAL">0</span>
+            </div>
+            <div class="legend-item" id="legend-high">
+              <span class="legend-color high"></span>
+              <span class="legend-label">High</span>
+              <span class="legend-count" data-level="HIGH">0</span>
+            </div>
+            <div class="legend-item" id="legend-medium">
+              <span class="legend-color medium"></span>
+              <span class="legend-label">Medium</span>
+              <span class="legend-count" data-level="MEDIUM">0</span>
+            </div>
+            <div class="legend-item" id="legend-low">
+              <span class="legend-color low"></span>
+              <span class="legend-label">Low</span>
+              <span class="legend-count" data-level="LOW">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Card -->
+      <div class="threat-card">
+        <h3 class="card-title">
+          <i class="icon-stats"></i> Statistics
+        </h3>
+        
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Average Threat Score</span>
+            <span class="stat-value" id="avg-threat-score">0.0</span>
+            <span class="stat-unit">/100</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Threat Feeds Active</span>
+            <span class="stat-value" id="active-feeds">4</span>
+            <span class="stat-unit">sources</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Analysis Latency</span>
+            <span class="stat-value" id="analysis-latency">0.0</span>
+            <span class="stat-unit">ms</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Cache Hit Rate</span>
+            <span class="stat-value" id="cache-hit-rate">95.0</span>
+            <span class="stat-unit">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed IP Analysis Section -->
+  <div class="threat-card full-width">
+    <h3 class="card-title">
+      <i class="icon-search"></i> Analyze IP
+    </h3>
+    
+    <div class="ip-analysis-container">
+      <div class="ip-input-group">
+        <input 
+          type="text" 
+          id="analyze-ip-input" 
+          class="ip-input" 
+          placeholder="Enter IP address (e.g., 1.2.3.4)"
+          autocomplete="off"
+        />
+        <button id="analyze-ip-btn" class="btn-primary">Analyze</button>
+        <span class="input-hint">Press Enter to analyze</span>
+      </div>
+
+      <!-- Analysis Result -->
+      <div id="analysis-result" class="analysis-result hidden">
+        <div class="analysis-header">
+          <span class="result-ip" id="result-ip">--</span>
+          <span class="result-threat-level" id="result-threat-level">--</span>
+        </div>
+
+        <div class="analysis-grid">
+          <!-- Reputation Section -->
+          <div class="analysis-section">
+            <h4 class="section-header">IP Reputation</h4>
+            <div class="metric-row">
+              <span class="metric-name">Reputation Score</span>
+              <div class="metric-bar-container">
+                <div class="metric-bar" id="result-rep-bar" style="width: 0%"></div>
+              </div>
+              <span class="metric-value" id="result-rep-score">0/100</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">Confidence</span>
+              <span class="metric-value" id="result-rep-confidence">0%</span>
+            </div>
+            <div class="sources-list" id="result-rep-sources">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Geolocation Section -->
+          <div class="analysis-section">
+            <h4 class="section-header">Geolocation</h4>
+            <div class="metric-row">
+              <span class="metric-name">Country</span>
+              <span class="metric-value" id="result-geo-country">--</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">Geographic Risk</span>
+              <div class="metric-bar-container">
+                <div class="metric-bar" id="result-geo-bar" style="width: 0%"></div>
+              </div>
+              <span class="metric-value" id="result-geo-score">0/100</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">ISP</span>
+              <span class="metric-value" id="result-geo-isp">Unknown</span>
+            </div>
+          </div>
+
+          <!-- Threat Feeds Section -->
+          <div class="analysis-section">
+            <h4 class="section-header">Threat Feeds</h4>
+            <div class="feeds-list" id="result-feeds-list">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Trends Section -->
+          <div class="analysis-section">
+            <h4 class="section-header">Attack Trends</h4>
+            <div class="metric-row">
+              <span class="metric-name">Attack Count</span>
+              <span class="metric-value" id="result-trend-count">0</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">Velocity</span>
+              <span class="metric-value" id="result-trend-velocity">0/hour</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">Consistency</span>
+              <span class="metric-value" id="result-trend-consistency">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Composite Score -->
+        <div class="analysis-composite">
+          <div class="composite-score-display">
+            <div class="composite-circle" id="composite-circle">
+              <span class="composite-number" id="composite-score">0</span>
+              <span class="composite-label">/100</span>
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="recommendations-box">
+            <h4 class="recommendations-title">Recommendations</h4>
+            <ul class="recommendations-list" id="recommendations-list">
+              <!-- Populated by JavaScript -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Activity Feed -->
+  <div class="threat-card full-width">
+    <h3 class="card-title">
+      <i class="icon-activity"></i> Real-time Activity
+    </h3>
+    
+    <div class="activity-feed" id="activity-feed">
+      <!-- Activity items populated by JavaScript -->
+      <div class="activity-item info">
+        <span class="timestamp" id="initial-timestamp">--:--:--</span>
+        <span class="message">Threat Intelligence System initialized</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden template for threat rows -->
+<template id="threat-row-template">
+  <tr class="threat-row">
+    <td class="rank">1</td>
+    <td class="ip">0.0.0.0</td>
+    <td class="score">
+      <div class="score-bar">
+        <div class="score-fill"></div>
+      </div>
+      <span class="score-text">0.0</span>
+    </td>
+    <td class="level">
+      <span class="level-badge">INFO</span>
+    </td>
+    <td class="action">
+      <button class="btn-tiny analyze-ip-btn">Analyze</button>
+    </td>
+  </tr>
+</template>
+
+<!-- Hidden template for activity items -->
+<template id="activity-item-template">
+  <div class="activity-item">
+    <span class="timestamp">--:--:--</span>
+    <span class="message">--</span>
+  </div>
+</template>
+
+<!-- Hidden template for feed items -->
+<template id="feed-item-template">
+  <div class="feed-item">
+    <span class="feed-name">Feed</span>
+    <span class="feed-status matched">●</span>
+  </div>
+</template>
+
+<!-- Hidden template for recommendation items -->
+<template id="recommendation-item-template">
+  <li class="recommendation-item">
+    <span class="icon">→</span>
+    <span class="text">Recommendation text</span>
+  </li>
+</template>

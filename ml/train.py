@@ -19,7 +19,6 @@ from ml.features import FeatureExtractor
 from ml.model import get_model
 
 try:
-    import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
     NUMPY_AVAILABLE = False

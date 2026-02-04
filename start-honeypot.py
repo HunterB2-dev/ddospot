@@ -5,10 +5,15 @@ DDoSPot Honeypot Entry Point
 Run: python start-honeypot.py
 """
 import sys
+import os
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+# Change to project root directory so relative paths work correctly
+os.chdir(project_root)
 
 if __name__ == "__main__":
     from app.main import asyncio, main, signal, logger

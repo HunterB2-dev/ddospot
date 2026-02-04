@@ -13,7 +13,7 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from dashboard import create_app, _rate_limiter
+from app.dashboard import create_app, _rate_limiter
 
 
 @pytest.fixture

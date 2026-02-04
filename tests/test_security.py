@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from dashboard import create_app
+from app.dashboard import create_app
 from telemetry.ratelimit import RateLimiter
 
 
@@ -23,10 +23,10 @@ class TestTokenReading:
         """Test reading token from environment"""
         os.environ['DDOSPOT_API_TOKEN'] = 'test-token-123'
         
-        from dashboard import _get_api_token
+        from app.dashboard import _get_api_token
         # Re-import to get updated value
         import importlib
-        import dashboard
+        from app import dashboard
         importlib.reload(dashboard)
         
         del os.environ['DDOSPOT_API_TOKEN']
