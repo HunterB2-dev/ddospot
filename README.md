@@ -16,7 +16,14 @@ Real-time detection and analysis of DDoS/DoS attacks
 ## ✨ Features
 
 🎯 **Multi-Protocol Detection** · 📊 **Real-time Dashboard** · 📱 **Mobile Dashboard** · 🌍 **Geolocation Tracking**  
-🤖 **ML-Powered Analysis** · 🔔 **Smart Alerts** · 🐳 **Docker Support**
+🤖 **ML-Powered Analysis** · 🔔 **Smart Alerts** · 🐳 **Docker Support** · 🔐 **Advanced Authentication** · 📡 **REST API**
+
+### Core Capabilities
+- **8+ Protocol Services**: TCP, UDP, HTTP, SSH, FTP, SMTP, DNS, NTP handlers
+- **Attack Detection**: Real-time anomaly detection with ML models (XGBoost, LightGBM)
+- **Threat Intelligence**: IP reputation scoring and geolocation analysis
+- **Automated Responses**: IP blocking, webhook notifications, SOAR integration
+- **Type-Safe Code**: Full type annotations for production reliability
 
 ---
 
@@ -74,13 +81,54 @@ python start-dashboard.py   # Terminal 2
 
 | Document | Purpose |
 |----------|---------|
-| [QUICK_START.md](QUICK_START.md) | 5-minute setup guide |
-| [FOLDER_GUIDE.md](FOLDER_GUIDE.md) | File navigation |
+| [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md) | 5-minute setup guide |
+| [DDoSPoT_DOCUMENTATION.md](DDoSPoT_DOCUMENTATION.md) | Comprehensive project documentation |
 | [API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | 42 API endpoints reference |
-| [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) | Production deployment |
-| [SESSION2_COMPLETION_SUMMARY.md](docs/SESSION2_COMPLETION_SUMMARY.md) | Features #4-#10 summary |
-| [FEATURES_11_12_ROADMAP.md](docs/FEATURES_11_12_ROADMAP.md) | Upcoming features |
+| [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) | Production deployment guide |
 | [Security Hardening](docs/SECURITY_HARDENING.md) | Security best practices |
+| [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | Test suite documentation |
+
+---
+
+## 🏗️ Architecture
+
+**Modular Design** with clear separation of concerns:
+- `core/` - Core honeypot engine (server, detection, responses, threat intelligence)
+- `ml/` - Machine learning modules (detection, prediction, pattern learning)
+- `app/` - Flask API and CLI interfaces
+- `telemetry/` - Monitoring and alerting system
+- `static/` & `templates/` - Web dashboards (desktop & mobile)
+
+**Type System**: Full Python type annotations across all modules for production-grade reliability.
+
+---
+
+## 🔧 Production Deployment
+
+### Docker (Recommended)
+```bash
+# Development environment
+docker-compose -f docker-compose-dev.yml up
+
+# Production environment
+docker-compose -f docker-compose-prod.yml up -d
+```
+
+### Manual Setup
+```bash
+# Clone & install
+git clone https://github.com/HunterB2-dev/ddospot.git
+cd ddospot
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run honeypot
+python start-honeypot.py &
+
+# Run dashboard (new terminal)
+python start-dashboard.py
+```
 
 ---
 
