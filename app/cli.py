@@ -530,27 +530,43 @@ def simulate_ip_blacklisting():
     
     # Simulate blacklisting actions
     blacklist_actions = [
-        ("Drop all packets from source IP", "IPTABLES_DROP"),
-        ("Rate limit to 10 packets/sec", "RATE_LIMIT"),
-        ("Send ICMP unreachable response", "ICMP_REJECT"),
-        ("Log and monitor (no action)", "LOG_ONLY"),
-        ("Firewall block + webhook alert", "FIREWALL_BLOCK"),
+        ("Drop all packets from source IP", "IPTABLES_DROP", 7200),
+        ("Rate limit to 10 packets/sec", "RATE_LIMIT", 3600),
+        ("Send ICMP unreachable response", "ICMP_REJECT", 5400),
+        ("Log and monitor (no action)", "LOG_ONLY", 1800),
+        ("Firewall block + webhook alert", "FIREWALL_BLOCK", 10800),
     ]
     
+    blocked_ips_count = 0
+    
     for idx, (ip, description) in enumerate(suspicious_ips, 1):
-        action, action_type = random.choice(blacklist_actions)
+        action, action_type, duration = random.choice(blacklist_actions)
         
         # Get attack stats for this IP
         ip_events = db.get_events_by_ip(ip, limit=1000)
         
         threat_level = "CRITICAL" if len(ip_events) > 50 else "HIGH" if len(ip_events) > 30 else "MEDIUM"
         
+        # Map threat levels to severity for blacklist
+        severity_map = {
+            "CRITICAL": "critical",
+            "HIGH": "high",
+            "MEDIUM": "medium"
+        }
+        
+        # Add to blacklist with appropriate severity
+        reason = f"{description} - {action_type} response"
+        db.add_blacklist(ip, reason, duration, severity_map[threat_level])
+        blocked_ips_count += 1
+        
         print(f"  [{idx}/5] {Colors.BOLD}{ip}{Colors.RESET}")
         print(f"        Threat Level: {Colors.RED}{threat_level}{Colors.RESET}")
         print(f"        Attack Events: {Colors.YELLOW}{len(ip_events)}{Colors.RESET}")
         print(f"        Protocol Used: {Colors.CYAN}{ip_events[0].get('protocol', 'Unknown') if ip_events else 'N/A'}{Colors.RESET}")
         print(f"        Action Taken: {Colors.GREEN}{action}{Colors.RESET}")
+        print(f"        Blacklist Duration: {duration // 60} minutes")
         print(f"        Response Type: {action_type}")
+        print(f"        Status: {Colors.GREEN}✓ BLACKLISTED{Colors.RESET}")
         print()
     
     print(f"\n{Colors.BOLD}{Colors.YELLOW}Blacklist Summary:{Colors.RESET}\n")
@@ -559,18 +575,30 @@ def simulate_ip_blacklisting():
     all_events = db.get_recent_events(minutes=120, limit=100000)
     suspicious_events = [e for e in all_events if any(ip in e.get('source_ip', '') for ip, _ in suspicious_ips)]
     
+    # Get current blacklist
+    current_blacklist = db.get_blacklist()
+    
     print(f"  Total Suspicious IPs Identified: {Colors.RED}{len(suspicious_ips)}{Colors.RESET}")
     print(f"  Total Malicious Events: {Colors.RED}{len(suspicious_events)}{Colors.RESET}")
     print(f"  Average Events per IP: {Colors.YELLOW}{len(suspicious_events) // len(suspicious_ips) if suspicious_events else 0:.0f}{Colors.RESET}")
+    print(f"  IPs Currently Blacklisted: {Colors.RED}{len(current_blacklist)}{Colors.RESET}")
     
     # Alert actions triggered
     alert_count = len(suspicious_ips)
     
     print(f"\n  {Colors.BOLD}{Colors.GREEN}✓ Alerts Triggered:{Colors.RESET} {Colors.YELLOW}{alert_count}{Colors.RESET}")
     print(f"  {Colors.BOLD}{Colors.GREEN}✓ Webhook Notifications:{Colors.RESET} {Colors.YELLOW}1{Colors.RESET} (aggregated)")
-    print(f"  {Colors.BOLD}{Colors.GREEN}✓ IPs Added to Blacklist:{Colors.RESET} {Colors.YELLOW}{len(suspicious_ips)}{Colors.RESET}")
+    print(f"  {Colors.BOLD}{Colors.GREEN}✓ IPs Added to Blacklist:{Colors.RESET} {Colors.YELLOW}{blocked_ips_count}{Colors.RESET}")
     
-    print(f"\n{Colors.GREEN}✓ IP Blacklisting simulation complete!{Colors.RESET}\n")
+    print(f"\n{Colors.BOLD}{Colors.YELLOW}Active Blacklist Entries:{Colors.RESET}\n")
+    for entry in current_blacklist[-5:]:  # Show last 5
+        ip = entry.get('ip', 'N/A')
+        reason = entry.get('reason', 'Unknown')
+        severity = entry.get('severity', 'medium').upper()
+        print(f"  {Colors.RED}●{Colors.RESET} {ip:20} - {reason:40} [{severity}]")
+    
+    print(f"\n{Colors.GREEN}✓ IP Blacklisting simulation complete!{Colors.RESET}")
+    print(f"{Colors.CYAN}💡 Check the dashboard to see the blacklisted IPs!{Colors.RESET}\n")
 
 
 def comprehensive_system_test():
