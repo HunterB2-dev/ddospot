@@ -62,7 +62,7 @@
                     <span class="live-text">LIVE</span>
                     <span class="last-updated">Updated: <span id="update-time">just now</span></span>
                 </div>
-                <a href="/settings" class="theme-toggle" title="Configure settings">⚙️</a>
+                <button id="settings-btn" class="theme-toggle" title="Configure settings">⚙️</button>
                 <button id="alert-settings-btn" class="theme-toggle" title="Configure alert thresholds">🔔</button>
                 <button id="pause-refresh-btn" class="theme-toggle" title="Pause/Resume refresh">▶️</button>
                 <div class="refresh-control">
@@ -1106,6 +1106,14 @@
                 checkConnection().catch(err => console.error('Health check error:', err));
             }, 500);
         })();
+    </script>
+    
+    <script>
+        // Settings navigation - store referrer
+        document.getElementById('settings-btn').addEventListener('click', function() {
+            sessionStorage.setItem('settings-referrer', 'index');
+            window.location.href = '/settings';
+        });
     </script>
     
     <script src="/static/dashboard.js?v=20260131f"></script>

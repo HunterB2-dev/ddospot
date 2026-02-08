@@ -15,7 +15,7 @@
                 <h1>⚙️ DDoSPoT Settings</h1>
                 <p>Configure honeypot services, alerts, responses, and system preferences</p>
                 <div class="header-actions">
-                    <a href="/" class="btn btn-secondary">← Back to Dashboard</a>
+                    <button id="back-btn" class="btn btn-secondary">← Back to Dashboard</button>
                 </div>
             </div>
         </header>
@@ -285,6 +285,30 @@
             </p>
         </footer>
     </div>
+
+    <script>
+        // Handle back button - go to previous dashboard or use referrer
+        document.getElementById('back-btn').addEventListener('click', function() {
+            // Try to get the referrer from sessionStorage
+            const referrer = sessionStorage.getItem('settings-referrer');
+            
+            // Map of dashboard routes
+            const dashboards = {
+                'dashboard-tabs': '/dashboard-tabs',
+                'advanced': '/advanced',
+                'mobile': '/mobile',
+                'index': '/',
+                'default': '/'
+            };
+            
+            if (referrer && dashboards[referrer]) {
+                window.location.href = dashboards[referrer];
+            } else {
+                // Default to the advanced dashboard
+                window.location.href = '/advanced';
+            }
+        });
+    </script>
 
     <script src="/static/settings.js"></script>
 </body>

@@ -207,7 +207,7 @@
                     <span class="live-pulse"></span>
                     <span class="live-text">LIVE</span>
                 </div>
-                <a href="/settings" class="theme-toggle" title="Settings">⚙️</a>
+                <button id="settings-btn-header" class="theme-toggle" title="Settings">⚙️</button>
             </div>
         </header>
 
@@ -258,7 +258,7 @@
                     </div>
                     <div class="accordion-content">
                         <button id="test-alert-btn" class="action-btn">📤 Test Alert</button>
-                        <a href="/settings" class="action-btn" style="display: inline-block; text-decoration: none;">⚙️ Settings</a>
+                        <button id="settings-btn-quick" class="action-btn" style="text-decoration: none;">⚙️ Settings</button>
                         <button id="clear-alerts-btn" class="action-btn secondary" style="margin-left: 10px;">🗑️ Clear</button>
                     </div>
                 </div>
@@ -374,6 +374,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     
     <script>
+        // Settings navigation - store referrer
+        function goToSettings() {
+            sessionStorage.setItem('settings-referrer', 'dashboard-tabs');
+            window.location.href = '/settings';
+        }
+        
+        document.getElementById('settings-btn-header').addEventListener('click', goToSettings);
+        document.getElementById('settings-btn-quick').addEventListener('click', goToSettings);
+
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {

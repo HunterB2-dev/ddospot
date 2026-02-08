@@ -282,7 +282,7 @@
                 </div>
                 <nav class="menu-nav">
                     <a href="/advanced" class="menu-item">📊 Full Dashboard</a>
-                    <a href="/settings" class="menu-item">⚙️ Settings</a>
+                    <a href="#" class="menu-item" id="settings-menu-item">⚙️ Settings</a>
                     <a href="/health-status" class="menu-item">🏥 System Health</a>
                     <a href="#" class="menu-item" id="offlineToggle">📡 Go Offline</a>
                     <a href="#" class="menu-item" id="logoutBtn">🚪 Logout</a>
@@ -306,6 +306,15 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Settings navigation - store referrer
+        document.getElementById('settings-menu-item').addEventListener('click', function(e) {
+            e.preventDefault();
+            sessionStorage.setItem('settings-referrer', 'mobile');
+            window.location.href = '/settings';
+        });
+    </script>
 
     <script src="/static/mobile-dashboard.js"></script>
 </body>
