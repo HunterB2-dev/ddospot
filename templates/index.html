@@ -22,11 +22,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
-        // Initialize theme immediately to prevent flash
-        const savedTheme = localStorage.getItem('ddospot-theme');
-        if (savedTheme === 'light') {
-            document.body.classList.add('light-mode');
-        }
         console.log('🍯 DDoSPoT Dashboard Loading...');
 
         // Register Service Worker (Feature #12)
@@ -67,7 +62,6 @@
                     <span class="live-text">LIVE</span>
                     <span class="last-updated">Updated: <span id="update-time">just now</span></span>
                 </div>
-                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
                 <a href="/settings" class="theme-toggle" title="Configure settings">⚙️</a>
                 <button id="alert-settings-btn" class="theme-toggle" title="Configure alert thresholds">🔔</button>
                 <button id="pause-refresh-btn" class="theme-toggle" title="Pause/Resume refresh">▶️</button>

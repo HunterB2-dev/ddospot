@@ -58,17 +58,6 @@
     --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.3);
 }
 
-body.light-mode {
-    --bg: var(--light-bg);
-    --surface: var(--light-surface);
-    --surface-2: var(--light-surface-2);
-    --border: var(--light-border);
-    --text: var(--light-text);
-    --text-secondary: var(--light-text-secondary);
-    background-color: #ffffff !important;
-    color: #0f0f0f !important;
-}
-
 html, body {
     margin: 0;
     padding: 0;
