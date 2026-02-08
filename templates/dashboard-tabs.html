@@ -4,24 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ff6b6b">
-    <meta name="description" content="Real-time DDoS/DoS Attack Honeypot Monitor with Machine Learning">
+    <meta name="description" content="Real-time DDoS/DoS Attack Honeypot Monitor">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="DDoSPoT">
     
-    <title>DDoSPot Dashboard (Optimized)</title>
+    <title>DDoSPoT Dashboard (Optimized)</title>
     
-    <!-- PWA Manifest (Feature #12) -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="/static/logo-192.png">
-    <link rel="apple-touch-icon" href="/static/logo-192.png">
     
-    <link rel="stylesheet" href="/static/dashboard-clean.css?v=20260131f">
+    <link rel="stylesheet" href="/static/dashboard.css">
     <link rel="stylesheet" href="/static/mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     
     <style>
-        /* Enhanced Tab Navigation */
+        /* Tab Navigation */
         .tab-navigation {
             display: flex;
             gap: 8px;
@@ -54,21 +50,8 @@
         .tab-btn.active {
             background: var(--primary);
             color: white;
-            border-color: var(--primary);
         }
 
-        .tab-btn.badge::after {
-            content: attr(data-count);
-            display: inline-block;
-            margin-left: 6px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        /* Tab Content */
         .tab-content {
             display: none;
             animation: fadeIn 0.3s ease;
@@ -89,7 +72,7 @@
             }
         }
 
-        /* Accordion Styles */
+        /* Accordion */
         .accordion-section {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -101,7 +84,6 @@
         .accordion-header {
             padding: 16px 20px;
             background: var(--surface-light);
-            border-bottom: 1px solid var(--border);
             cursor: pointer;
             display: flex;
             justify-content: space-between;
@@ -124,16 +106,14 @@
         }
 
         .accordion-toggle {
-            display: inline-flex;
             width: 24px;
             height: 24px;
+            display: flex;
             align-items: center;
             justify-content: center;
             background: var(--border);
             border-radius: 4px;
-            color: var(--text);
-            transition: transform 0.3s ease, background 0.2s ease;
-            font-size: 14px;
+            transition: all 0.3s ease;
         }
 
         .accordion-header.active .accordion-toggle {
@@ -145,28 +125,15 @@
         .accordion-content {
             display: none;
             padding: 20px;
-            animation: slideDown 0.3s ease;
         }
 
         .accordion-content.active {
             display: block;
         }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                max-height: 0;
-            }
-            to {
-                opacity: 1;
-                max-height: 2000px;
-            }
-        }
-
-        /* Grid Layout for Stats */
         .stats-compact {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
             margin-bottom: 20px;
         }
@@ -190,44 +157,15 @@
             color: var(--primary);
         }
 
-        /* Two-column layout for larger screens */
-        @media (min-width: 1024px) {
-            .accordion-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-                margin-bottom: 16px;
-            }
-
-            .accordion-row .accordion-section {
-                margin-bottom: 0;
-            }
-        }
-
-        /* Mobile: Full width */
         @media (max-width: 768px) {
             .tab-navigation {
                 padding: 8px 12px;
-                gap: 4px;
             }
 
             .tab-btn {
                 padding: 8px 12px;
                 font-size: 12px;
             }
-
-            .main-content {
-                padding: 12px;
-            }
-        }
-
-        /* Hide sections not in active tab */
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
         }
     </style>
 </head>
@@ -244,43 +182,28 @@
                 <div class="live-indicator">
                     <span class="live-pulse"></span>
                     <span class="live-text">LIVE</span>
-                    <span class="last-updated">Updated: <span id="update-time">just now</span></span>
                 </div>
                 <button id="dark-mode-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
-                <a href="/settings" class="theme-toggle" title="Configure settings">⚙️</a>
-                <button id="alert-settings-btn" class="theme-toggle" title="Configure alert thresholds">🔔</button>
-                <button id="pause-refresh-btn" class="theme-toggle" title="Pause/Resume refresh">▶️</button>
-                <div class="refresh-control">
-                    <label for="refresh-interval">Refresh:</label>
-                    <select id="refresh-interval">
-                        <option value="real-time" selected>⚡ Real-time (1s)</option>
-                        <option value="5000">5s</option>
-                        <option value="10000">10s</option>
-                        <option value="30000">30s</option>
-                        <option value="60000">60s</option>
-                    </select>
-                </div>
+                <a href="/settings" class="theme-toggle" title="Settings">⚙️</a>
             </div>
         </header>
 
         <!-- Tab Navigation -->
         <div class="tab-navigation">
             <button class="tab-btn active" data-tab="overview">📊 Overview</button>
-            <button class="tab-btn" data-tab="threats">🎯 Live Threats</button>
+            <button class="tab-btn" data-tab="threats">🎯 Threats</button>
             <button class="tab-btn" data-tab="analysis">📈 Analysis</button>
-            <button class="tab-btn" data-tab="intelligence">🔍 Intelligence</button>
+            <button class="tab-btn" data-tab="intelligence">🔍 Intel</button>
             <button class="tab-btn" data-tab="advanced">⚙️ Advanced</button>
         </div>
 
         <main class="main-content">
 
-            <!-- ============ OVERVIEW TAB ============ -->
+            <!-- OVERVIEW TAB -->
             <div class="tab-content active" id="overview">
-                
-                <!-- Statistics -->
                 <div class="accordion-section">
                     <div class="accordion-header active">
-                        <h3>📊 Key Statistics (24h)</h3>
+                        <h3>📊 Key Statistics</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content active">
@@ -290,81 +213,39 @@
                                 <div id="stat-total-events" class="stat-value">-</div>
                             </div>
                             <div class="stat-card-compact">
-                                <div class="stat-label">Unique Attackers</div>
+                                <div class="stat-label">Unique IPs</div>
                                 <div id="stat-unique-ips" class="stat-value">-</div>
                             </div>
                             <div class="stat-card-compact">
-                                <div class="stat-label">Blacklisted IPs</div>
+                                <div class="stat-label">Blacklisted</div>
                                 <div id="stat-blacklist" class="stat-value">-</div>
                             </div>
                             <div class="stat-card-compact">
                                 <div class="stat-label">Top Protocol</div>
                                 <div id="stat-top-protocol" class="stat-value">-</div>
                             </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Detection Accuracy</div>
-                                <div id="stat-accuracy" class="stat-value">99.2%</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Avg Response Time</div>
-                                <div id="stat-response-time" class="stat-value">45ms</div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
                 <div class="accordion-section">
                     <div class="accordion-header">
                         <h3>⚡ Quick Actions</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                            <button class="action-btn" onclick="document.getElementById('test-alert-btn').click()">📤 Test Alert</button>
-                            <button class="action-btn" onclick="window.location.href='/settings'">⚙️ Settings</button>
-                            <button class="action-btn secondary" id="export-data-btn">📥 Export Data</button>
-                            <button class="action-btn secondary" id="clear-alerts-btn">🗑️ Clear History</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Health -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>🏥 System Health</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
-                        <div class="stats-compact">
-                            <div class="stat-card-compact">
-                                <div class="stat-label">CPU Usage</div>
-                                <div id="stat-cpu" class="stat-value">-</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Memory Usage</div>
-                                <div id="stat-memory" class="stat-value">-</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Database Size</div>
-                                <div id="stat-db-size" class="stat-value">-</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">API Response</div>
-                                <div id="stat-api-response" class="stat-value">-</div>
-                            </div>
-                        </div>
+                        <button id="test-alert-btn" class="action-btn">📤 Test Alert</button>
+                        <a href="/settings" class="action-btn" style="display: inline-block; text-decoration: none;">⚙️ Settings</a>
+                        <button id="clear-alerts-btn" class="action-btn secondary" style="margin-left: 10px;">🗑️ Clear</button>
                     </div>
                 </div>
             </div>
 
-            <!-- ============ LIVE THREATS TAB ============ -->
+            <!-- THREATS TAB -->
             <div class="tab-content" id="threats">
-                
-                <!-- Recent Alerts -->
                 <div class="accordion-section">
                     <div class="accordion-header active">
-                        <h3>🔴 Recent Threats (Live)</h3>
+                        <h3>🔴 Recent Threats</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content active">
@@ -374,212 +255,91 @@
                     </div>
                 </div>
 
-                <!-- Geolocation Map -->
                 <div class="accordion-section">
                     <div class="accordion-header">
-                        <h3>🗺️ Attack Origins (Map)</h3>
+                        <h3>🗺️ Attack Map</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content">
-                        <div id="map" style="height: 400px; border-radius: 6px; margin-bottom: 10px;"></div>
-                        <p style="font-size: 12px; color: var(--text-muted);">Red markers show attack sources. Click for details.</p>
-                    </div>
-                </div>
-
-                <!-- Top Attacking IPs -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>👑 Top Attacking IPs</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
-                        <div id="top-ips-container" class="table-container">
-                            <div class="loading">Loading...</div>
-                        </div>
+                        <div id="map" style="height: 400px; border-radius: 6px;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ============ ANALYSIS TAB ============ -->
+            <!-- ANALYSIS TAB -->
             <div class="tab-content" id="analysis">
-                
-                <!-- Protocol Breakdown -->
                 <div class="accordion-section">
                     <div class="accordion-header active">
-                        <h3>📊 Attack Breakdown by Protocol</h3>
+                        <h3>📊 Protocol Breakdown</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content active">
-                        <canvas id="protocol-chart" style="max-height: 300px; margin-bottom: 15px;"></canvas>
+                        <canvas id="protocol-chart" style="max-height: 300px;"></canvas>
                     </div>
                 </div>
 
-                <!-- Hourly Trend -->
                 <div class="accordion-section">
                     <div class="accordion-header">
-                        <h3>📈 Hourly Attack Trend</h3>
+                        <h3>📈 Hourly Trend</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content">
-                        <canvas id="hourly-chart" style="max-height: 300px; margin-bottom: 15px;"></canvas>
-                    </div>
-                </div>
-
-                <!-- Country Distribution -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>🌍 Attacks by Country</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
-                        <div id="country-stats" class="table-container">
-                            <div class="loading">Loading...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ML Model Performance -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>🤖 ML Detection Performance</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
-                        <div class="stats-compact">
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Random Forest</div>
-                                <div class="stat-value">98.5%</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Isolation Forest</div>
-                                <div class="stat-value">97.2%</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">LSTM Network</div>
-                                <div class="stat-value">99.1%</div>
-                            </div>
-                            <div class="stat-card-compact">
-                                <div class="stat-label">Ensemble Score</div>
-                                <div class="stat-value">99.2%</div>
-                            </div>
-                        </div>
+                        <canvas id="hourly-chart" style="max-height: 300px;"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- ============ INTELLIGENCE TAB ============ -->
+            <!-- INTELLIGENCE TAB -->
             <div class="tab-content" id="intelligence">
-                
-                <!-- Threat Intelligence Widget -->
                 <div class="accordion-section">
                     <div class="accordion-header active">
-                        <h3>🔍 Threat Intelligence</h3>
+                        <h3>🔍 Advanced Search</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
-                    <div class="accordion-content active" id="threat-intel-section">
-                        <div class="loading">Loading threat intelligence...</div>
-                    </div>
-                </div>
-
-                <!-- Custom Search -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>🔎 Advanced Search</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
+                    <div class="accordion-content active">
                         <div class="search-controls">
                             <div class="search-row">
-                                <input type="text" id="search-ip" placeholder="Search by IP address" class="search-input">
-                                <select id="search-protocol" class="search-input" style="flex: 0.5;">
+                                <input type="text" id="search-ip" placeholder="Search IP..." class="search-input">
+                                <select id="search-protocol" class="search-input">
                                     <option value="">All Protocols</option>
                                     <option value="SSH">SSH</option>
                                     <option value="HTTP">HTTP</option>
                                     <option value="SSDP">SSDP</option>
                                 </select>
-                                <select id="search-hours" class="search-input" style="flex: 0.8;">
-                                    <option value="24" selected>Last 24h</option>
-                                    <option value="72">Last 3 days</option>
-                                    <option value="168">Last 7 days</option>
-                                </select>
-                            </div>
-                            <div class="search-row" style="margin-top: 10px;">
                                 <button id="search-btn" class="action-btn">🔎 Search</button>
-                                <button id="search-reset-btn" class="action-btn secondary">↻ Reset</button>
                             </div>
                         </div>
                         <div id="search-results" class="table-container" style="margin-top: 15px;">
-                            <div style="padding: 20px; text-align: center; color: #999;">
-                                Click "Search" to find attacks by IP or protocol
-                            </div>
+                            <p style="text-align: center; color: var(--text-muted);">Click Search to find threats</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ============ ADVANCED TAB ============ -->
+            <!-- ADVANCED TAB -->
             <div class="tab-content" id="advanced">
-                
-                <!-- Custom Alert Rules -->
                 <div class="accordion-section">
                     <div class="accordion-header active">
-                        <h3>🚨 Custom Alert Rules</h3>
+                        <h3>🚨 Alert Rules</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content active">
-                        <div style="margin-bottom: 15px;">
-                            <button id="new-rule-btn" class="action-btn">➕ New Alert Rule</button>
-                            <button id="refresh-rules-btn" class="action-btn secondary">↻ Refresh</button>
-                        </div>
-                        <div id="rules-list" class="rules-list">
-                            <div class="loading">Loading alert rules...</div>
+                        <button id="new-rule-btn" class="action-btn">➕ New Rule</button>
+                        <div id="rules-list" style="margin-top: 15px;">
+                            <div class="loading">Loading rules...</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Response Actions Configuration -->
                 <div class="accordion-section">
                     <div class="accordion-header">
-                        <h3>⚡ Response Actions</h3>
+                        <h3>📋 Blacklist</h3>
                         <div class="accordion-toggle">▼</div>
                     </div>
                     <div class="accordion-content">
-                        <div id="response-actions-container" style="padding: 15px;">
-                            <div class="loading">Loading...</div>
+                        <div id="blacklist-container" class="table-container">
+                            <div class="loading">Loading blacklist...</div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- System Configuration -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>⚙️ System Configuration</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                            <a href="/settings" class="action-btn">⚙️ Full Settings</a>
-                            <button id="export-config-btn" class="action-btn secondary">💾 Export Config</button>
-                            <button id="import-config-btn" class="action-btn secondary">📤 Import Config</button>
-                            <button id="reset-config-btn" class="action-btn secondary">↻ Reset to Default</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Report Generation -->
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>📄 Generate Reports</h3>
-                        <div class="accordion-toggle">▼</div>
-                    </div>
-                    <div class="accordion-content">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                            <button id="report-daily-btn" class="action-btn">📊 Daily Report</button>
-                            <button id="report-weekly-btn" class="action-btn">📊 Weekly Report</button>
-                            <button id="report-patterns-btn" class="action-btn">🔍 Attack Patterns</button>
-                            <button id="report-export-btn" class="action-btn">📥 Export All Data</button>
-                        </div>
-                        <div id="report-preview" style="margin-top: 15px;"></div>
                     </div>
                 </div>
             </div>
@@ -589,64 +349,61 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script src="/static/dashboard.js"></script>
+    
     <script>
-        // Tab Navigation
+        // Theme toggle
+        document.getElementById('dark-mode-toggle').addEventListener('click', function() {
+            document.body.classList.toggle('light-mode');
+            const isDark = !document.body.classList.contains('light-mode');
+            localStorage.setItem('ddospot-theme', isDark ? 'dark' : 'light');
+        });
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('ddospot-theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+        }
+
+        // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabName = btn.getAttribute('data-tab');
+            btn.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
                 
                 // Hide all tabs
                 document.querySelectorAll('.tab-content').forEach(tab => {
                     tab.classList.remove('active');
                 });
                 
-                // Remove active class from all buttons
+                // Remove active class from buttons
                 document.querySelectorAll('.tab-btn').forEach(b => {
                     b.classList.remove('active');
                 });
                 
                 // Show selected tab
                 document.getElementById(tabName).classList.add('active');
-                btn.classList.add('active');
+                this.classList.add('active');
             });
         });
 
-        // Accordion Toggle
+        // Accordion toggle
         document.querySelectorAll('.accordion-header').forEach(header => {
-            header.addEventListener('click', () => {
-                const content = header.nextElementSibling;
-                const isActive = header.classList.contains('active');
-                
-                // Close all accordions in same parent (optional: remove for multi-open)
-                // header.parentElement.querySelectorAll('.accordion-content').forEach(c => c.classList.remove('active'));
-                // header.parentElement.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
-                
-                // Toggle current
-                header.classList.toggle('active');
-                content.classList.toggle('active');
+            header.addEventListener('click', function() {
+                this.classList.toggle('active');
+                this.nextElementSibling.classList.toggle('active');
             });
         });
-
-        // Initialize theme
-        const savedTheme = localStorage.getItem('ddospot-theme');
-        if (savedTheme === 'light') {
-            document.body.classList.add('light-mode');
-        }
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/service-worker.js')
-                    .then(reg => {
-                        console.log('✅ Service Worker registered:', reg);
-                        setInterval(() => reg.update(), 60000);
-                    })
-                    .catch(err => console.log('⚠️ Service Worker registration failed:', err));
-            });
+            navigator.serviceWorker.register('/static/service-worker.js')
+                .then(reg => console.log('✅ Service Worker registered'))
+                .catch(err => console.log('Service Worker failed:', err));
         }
 
-        console.log('🍯 DDoSPoT Dashboard (Optimized) Ready!');
+        console.log('✅ Dashboard Ready!');
     </script>
+
+    <!-- Load main dashboard data -->
+    <script src="/static/dashboard.js"></script>
 </body>
 </html>
