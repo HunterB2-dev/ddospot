@@ -698,6 +698,12 @@ def mobile_dashboard():
     return render_template('mobile-dashboard.html')
 
 
+@app.route('/dashboard-tabs')
+def dashboard_tabs():
+    """Optimized tabbed dashboard with accordion sections"""
+    return render_template('dashboard-tabs.html')
+
+
 @app.route('/manifest.json')
 def manifest():
     """PWA manifest file (Feature #12)"""
