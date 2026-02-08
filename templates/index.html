@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ff6b6b">
+    <meta name="description" content="Real-time DDoS/DoS Attack Honeypot Monitor with Machine Learning">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DDoSPoT">
+    
     <title>DDoSPot Dashboard</title>
+    
+    <!-- PWA Manifest (Feature #12) -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/static/logo-192.png">
+    <link rel="apple-touch-icon" href="/static/logo-192.png">
+    
     <link rel="stylesheet" href="/static/dashboard-clean.css?v=20260131f">
+    <link rel="stylesheet" href="/static/mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -15,6 +28,28 @@
             document.body.classList.add('light-mode');
         }
         console.log('🍯 DDoSPoT Dashboard Loading...');
+
+        // Register Service Worker (Feature #12)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                    .then(reg => {
+                        console.log('✅ Service Worker registered:', reg);
+                        // Check for updates periodically
+                        setInterval(() => reg.update(), 60000);
+                    })
+                    .catch(err => console.log('⚠️ Service Worker registration failed:', err));
+            });
+        }
+
+        // Prompt for PWA installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show install button/prompt when appropriate
+            console.log('✅ PWA install prompt available');
+        });
     </script>
 </head>
 <body>
@@ -33,7 +68,7 @@
                     <span class="last-updated">Updated: <span id="update-time">just now</span></span>
                 </div>
                 <button id="dark-mode-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
-                <button id="layout-settings-btn" class="theme-toggle" title="Dashboard layout settings">⚙️</button>
+                <a href="/settings" class="theme-toggle" title="Configure settings">⚙️</a>
                 <button id="alert-settings-btn" class="theme-toggle" title="Configure alert thresholds">🔔</button>
                 <button id="pause-refresh-btn" class="theme-toggle" title="Pause/Resume refresh">▶️</button>
                 <div class="refresh-control">
